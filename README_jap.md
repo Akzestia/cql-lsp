@@ -4,6 +4,6 @@
 
 CQL (Cassandra クエリ言語) 用の唯一のオープン ソース LSP:?
 
-## License
+## ライセンス
 
-This project is licensed under the [MIT License](LICENSE).
+このプロジェクトは[MITライセンス](LICENSE)に基づいてライセンスされています。

@@ -11,6 +11,18 @@ pub struct Backend {
     pub documents: RwLock<HashMap<Url, String>>,
 }
 
+#[derive(Debug, Clone)]
+struct Document {
+    uri: Url,
+    text: String,
+}
+
+impl Document {
+    fn text(&self) -> &str {
+        &self.text
+    }
+}
+
 impl Backend {
     fn is_in_string_literal(line: &str, position: u32) -> bool {
         let prefix = match line.get(..position as usize) {
@@ -254,6 +266,18 @@ impl Backend {
         ];
 
         return Ok(Some(CompletionResponse::Array(items)));
+    }
+
+    fn get_document(&self, uri: &Url) -> Option<Document> {
+        let documents = match self.documents.try_read() {
+            Ok(docs) => docs,
+            Err(_) => return None,
+        };
+
+        documents.get(uri).map(|text| Document {
+            uri: uri.clone(),
+            text: text.clone(),
+        })
     }
 }
 

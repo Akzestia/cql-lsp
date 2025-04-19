@@ -10,7 +10,7 @@ use tower_lsp::{LspService, Server};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting logger setup...");
     setup_logger().map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-    setup_config().map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+    setup_config()?;
     println!("Logger setup complete");
 
     info!("Server starting");

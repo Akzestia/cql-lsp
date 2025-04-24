@@ -304,35 +304,22 @@ impl Backend {
             None => return false,
         };
 
-        let trimmed_prefix = prefix.trim_end();
+        let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
 
         info!("Splitted F: {:?}", splitted);
 
-        if !(splitted.contains(&"SELECT") || splitted.contains(&"select"))
-            || splitted.contains(&"*")
-            || splitted.contains(&"FROM")
-            || splitted.contains(&"from")
-        {
+        if !splitted.contains(&"select") || splitted.contains(&"*") || splitted.contains(&"from") {
             info!("Splitted FAILURE");
             return false;
         }
 
-        if splitted.len() == 2 && !splitted.contains(&",") && prefix.len() != trimmed_prefix.len() {
-            info!("Splitted FAILURE: no comma after last column");
+        if splitted.len() > 2 && !splitted[splitted.len() - 2].contains(&",") {
             return false;
         }
 
-        let mut comma_used = false;
-
-        for char in prefix.chars() {
-            if !comma_used && char == ',' {
-                comma_used = true;
-            }
-
-            if comma_used && char == ' ' {
-                return false;
-            }
+        if trimmed_prefix.len() != prefix.len() && !splitted[splitted.len() - 1].contains(&",") {
+            return false;
         }
 
         info!("Splitted SUCCESS");

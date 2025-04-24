@@ -2,11 +2,13 @@
 # Used for getting context based completions
 
 [db_context]
-# default SELECT behavior (false) | Enhanced (true) selectors based on DB context
-context_based_select = false
 # default CQL password
 password = "cassandara"
 # default CQL user name
 user = "cassandara"
 # default ip to localhost
 ip = "127.0.0.1"
+
+[smart_select]
+enabled = false
+table_only = true

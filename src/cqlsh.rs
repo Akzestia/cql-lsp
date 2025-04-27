@@ -28,6 +28,24 @@ pub struct KeySpace {
     pub replication: std::collections::HashMap<String, String>,
 }
 
+#[derive(Debug)]
+pub struct Column {
+    pub keyspace_name: String,
+    pub table_name: String,
+    pub column_name: String,
+    pub column_type: String,
+}
+
+impl fmt::Display for Column {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Column [keyspace: {}, table: {}, column: {}, type: {}]",
+            self.keyspace_name, self.table_name, self.column_name, self.column_type
+        )
+    }
+}
+
 impl FromIterator<KeySpace> for Vec<String> {
     fn from_iter<I: IntoIterator<Item = KeySpace>>(iter: I) -> Self {
         iter.into_iter().map(|item| item.keyspace_name).collect()

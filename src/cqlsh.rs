@@ -183,24 +183,81 @@ pub async fn query_keyspace_scoped_tables(
         .await?
         .into_rows_result()?;
 
-    let mut items = Vec::<String>::new();
+    let mut items = Vec::<Table>::new();
 
-    for row in result_rows.rows::<(String,)>()? {
-        let field = row?;
-        info!("Found field: {}", field.0);
-        items.push(field.0);
+    for row in result_rows.rows::<Table>()? {
+        let table = row?;
+        items.push(table);
     }
 
     Ok(items)
 }
 
-pub async fn check_connection(config: &CqlSettings) -> Result<bool, Box<dyn std::error::Error>> {
-    _ = SessionBuilder::new()
+pub async fn query_g_tables(
+    config: &CqlSettings,
+) -> Result<Vec<Table>, Box<dyn std::error::Error>> {
+    let keyspaces = query_keyspaces(&config).await?;
+    let mut items = Vec::<Table>::new();
+
+    for keyspace in keyspaces {
+        let mut tables = query_keyspace_scoped_tables(&config, &keyspace.keyspace_name).await?;
+        items.append(&mut tables);
+    }
+
+    Ok(items)
+}
+
+pub async fn query_keyspace_scoped_fields(
+    config: &CqlSettings,
+    keyspace: &str,
+) -> Result<Vec<Column>, Box<dyn std::error::Error>> {
+    let session = SessionBuilder::new()
         .known_node(&config.url)
         .user(&config.user, &config.pswd)
         .connection_timeout(Duration::from_secs(3))
         .build()
         .await?;
 
-    Ok(true)
+    // SELECT table_name FROM system_schema.tables WHERE keyspace_name = '{}';
+    // Sshort row_result query instead of using query_g_tables()
+    // Ccause query_g_tables() returns not just table names, but a Ve<Tables> insteads
+    let select_tables_query =
+        format!("SELECT table_name FROM system_schema.tables WHERE keyspace_name = '{keyspace}';");
+
+    let result_rows = session
+        .query_unpaged(select_tables_query, &[])
+        .await?
+        .into_rows_result()?;
+
+    let mut items = Vec::<Column>::new();
+
+    for row in result_rows.rows::<(String,)>()? {
+        let row_result = row?;
+        info!("Table_name: {}", row_result.0);
+        let table = row_result.0;
+
+        // SELECT * FROM system_schema.columns WHERE keyspace_name = '{}' AND table_name = '{}';
+        let select_columns_query = format!(
+            "SELECT keyspace_name, table_name, column_name, type FROM system_schema.columns WHERE keyspace_name = '{keyspace}' AND table_name = '{table}'"
+        );
+
+        let result_rows = session
+            .query_unpaged(select_columns_query, &[])
+            .await?
+            .into_rows_result()?;
+
+        for jrow in result_rows.rows::<(String, String, String, String)>()? {
+            let jrow_result = jrow?;
+            let column = Column {
+                keyspace_name: jrow_result.0,
+                table_name: jrow_result.1,
+                column_name: jrow_result.2,
+                column_type: jrow_result.3,
+            };
+
+            items.push(column);
+        }
+    }
+
+    Ok(items)
 }

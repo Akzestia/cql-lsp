@@ -798,7 +798,7 @@ impl Backend {
     async fn handle_in_string_keyspace_completion(
         &self,
         line: &str,
-        position: Position,
+        position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         if let Some(prefix) = line.get(..position.character as usize) {
             if let Some(quote_pos) = prefix.rfind(|c| c == '"' || c == '\'') {
@@ -1022,7 +1022,7 @@ impl Backend {
     async fn handle_out_of_string_graph_engine_completion(
         &self,
         line: &str,
-        position: u32,
+        position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Offering graph engine completions");
 
@@ -1032,6 +1032,7 @@ impl Backend {
             items.push(CompletionItem {
                 label: item.clone(),
                 kind: Some(CompletionItemKind::VALUE),
+                insert_text: Some(format!("'{}'", item)),
                 ..Default::default()
             });
         }
@@ -1042,21 +1043,79 @@ impl Backend {
     async fn handle_in_string_graph_engine_completion(
         &self,
         line: &str,
-        position: u32,
+        position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Offering graph engine completions");
 
-        let mut items: Vec<CompletionItem> = Vec::new();
+        if let Some(prefix) = line.get(..position.character as usize) {
+            if let Some(quote_pos) = prefix.rfind(|c| c == '"' || c == '\'') {
+                let quote_char = prefix.chars().nth(quote_pos).unwrap_or('"');
+                let typed_prefix = prefix.get(quote_pos + 1..).unwrap_or("");
 
-        for item in self.get_graph_engine_types() {
-            items.push(CompletionItem {
-                label: item.clone(),
-                kind: Some(CompletionItemKind::VALUE),
-                ..Default::default()
-            });
+                let suffix = line.get(position.character as usize..).unwrap_or("");
+                let word_end = suffix
+                    .find(|c: char| !c.is_alphanumeric() && c != '_')
+                    .unwrap_or(suffix.len());
+                let has_closing_quote = suffix.starts_with(quote_char);
+                let has_semicolon = suffix[has_closing_quote as usize..].starts_with(';');
+
+                let mut items = Vec::new();
+
+                for type_ in self.get_graph_engine_types() {
+                    if type_.starts_with(typed_prefix) {
+                        let insert_text = match (has_closing_quote, has_semicolon) {
+                            (true, true) => type_.clone(),
+                            (true, false) => format!("{}{}", type_, quote_char),
+                            (false, true) => format!("{}{}", type_, quote_char),
+                            (false, false) => format!("{}{}", type_, quote_char),
+                        };
+
+                        if has_closing_quote && has_semicolon == false {
+                            let replace_end = position.character as usize
+                                + word_end
+                                + has_closing_quote as usize
+                                + has_semicolon as usize;
+
+                            let text_edit = TextEdit {
+                                range: Range {
+                                    start: Position {
+                                        line: position.line,
+                                        // +1 to avoid replacing prefix \"
+                                        character: quote_pos as u32 + 1,
+                                    },
+                                    end: Position {
+                                        line: position.line,
+                                        character: replace_end as u32,
+                                    },
+                                },
+                                new_text: insert_text,
+                            };
+
+                            items.push(CompletionItem {
+                                label: type_.clone(),
+                                kind: Some(CompletionItemKind::VALUE),
+                                text_edit: Some(CompletionTextEdit::Edit(text_edit)),
+                                ..Default::default()
+                            });
+                        } else {
+                            items.push(CompletionItem {
+                                label: type_.clone(),
+                                kind: Some(CompletionItemKind::VALUE),
+                                insert_text: Some(insert_text),
+                                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                                ..Default::default()
+                            });
+                        }
+                    }
+                }
+
+                if !items.is_empty() {
+                    return Ok(Some(CompletionResponse::Array(items)));
+                }
+            }
         }
 
-        return Ok(Some(CompletionResponse::Array(items)));
+        Ok(Some(CompletionResponse::Array(vec![])))
     }
 
     fn get_document(&self, uri: &Url) -> Option<Document> {
@@ -1224,10 +1283,10 @@ impl LanguageServer for Backend {
 
         if self.should_suggest_graph_engine_types(line, position.character) {
             return if in_string {
-                self.handle_in_string_graph_engine_completion(line, position.character)
+                self.handle_in_string_graph_engine_completion(line, &position)
                     .await
             } else {
-                self.handle_out_of_string_graph_engine_completion(line, position.character)
+                self.handle_out_of_string_graph_engine_completion(line, &position)
                     .await
             };
         }

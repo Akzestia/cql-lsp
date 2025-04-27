@@ -9,6 +9,7 @@ user = "cassandara"
 # default ip to localhost
 ip = "127.0.0.1"
 
+# Manages behavior of SELECT completion
 [smart_select]
 enabled = false
 table_only = true

@@ -765,10 +765,72 @@ impl Backend {
 
     async fn get_table_completions(
         &self,
-        line: &str,
         position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        return Ok(Some(CompletionResponse::Array(vec![])));
+        if let Some(keyspace) = self.latest_keyspace(&position).await {
+            let tables = cqlsh::query_keyspace_scoped_tables(&self.config, &keyspace)
+                .await
+                .unwrap_or_else(|e| {
+                    info!("Error: {e}");
+                    vec![]
+                });
+
+            let tables_unscoped = cqlsh::query_g_tables(&self.config)
+                .await
+                .unwrap_or_else(|e| {
+                    info!("Error: {e}");
+                    vec![]
+                });
+
+            let mut items = Vec::<CompletionItem>::new();
+
+            for table in tables {
+                items.push(CompletionItem {
+                    label: table.table_name.clone(),
+                    // Keyword to display scoped tables in different color
+                    kind: Some(CompletionItemKind::KEYWORD),
+                    detail: Some(format!("{}", table.united())),
+                    insert_text: Some(format!(r#"{}"#, table.table_name)),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    ..Default::default()
+                })
+            }
+
+            for tablex in tables_unscoped {
+                items.push(CompletionItem {
+                    label: tablex.united(),
+                    kind: Some(CompletionItemKind::VARIABLE),
+                    detail: Some(format!("{}", tablex.united())),
+                    insert_text: Some(format!(r#"{}"#, tablex.united())),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    ..Default::default()
+                })
+            }
+
+            return Ok(Some(CompletionResponse::Array(items)));
+        }
+
+        let tables = cqlsh::query_g_tables(&self.config)
+            .await
+            .unwrap_or_else(|e| {
+                info!("Error: {e}");
+                vec![]
+            });
+
+        let mut items = Vec::<CompletionItem>::new();
+
+        for table in tables {
+            items.push(CompletionItem {
+                label: table.united(),
+                kind: Some(CompletionItemKind::VARIABLE),
+                detail: Some(format!("{}", table.united())),
+                insert_text: Some(format!(r#"{}"#, table.united())),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            })
+        }
+
+        return Ok(Some(CompletionResponse::Array(items)));
     }
 
     fn should_ssuggest_table_completions(&self, line: &str, position: u32) -> bool {
@@ -915,7 +977,10 @@ impl Backend {
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Offering fields completions");
 
-        if let Some(response) = self.get_fields(line, position).await? {
+        if let Some(response) = self.get_fields(line, position).await.unwrap_or_else(|e| {
+            info!("{e}");
+            Some(CompletionResponse::Array(vec![]))
+        }) {
             return Ok(Some(response));
         }
 
@@ -953,70 +1018,18 @@ impl Backend {
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Offering TABLE completions");
 
-        if let Some(keyspace) = self.latest_keyspace(&position).await {
-            let tables = cqlsh::query_keyspace_scoped_tables(&self.config, &keyspace)
-                .await
-                .unwrap_or_else(|e| {
-                    info!("Error: {e}");
-                    vec![]
-                });
-
-            let tables_unscoped = cqlsh::query_g_tables(&self.config)
-                .await
-                .unwrap_or_else(|e| {
-                    info!("Error: {e}");
-                    vec![]
-                });
-
-            let mut items = Vec::<CompletionItem>::new();
-
-            for table in tables {
-                items.push(CompletionItem {
-                    label: table.table_name.clone(),
-                    // Keyword to display scoped tables in different color
-                    kind: Some(CompletionItemKind::KEYWORD),
-                    detail: Some(format!("{}", table.united())),
-                    insert_text: Some(format!(r#"{}"#, table.table_name)),
-                    insert_text_format: Some(InsertTextFormat::SNIPPET),
-                    ..Default::default()
-                })
-            }
-
-            for tablex in tables_unscoped {
-                items.push(CompletionItem {
-                    label: tablex.united(),
-                    kind: Some(CompletionItemKind::VARIABLE),
-                    detail: Some(format!("{}", tablex.united())),
-                    insert_text: Some(format!(r#"{}"#, tablex.united())),
-                    insert_text_format: Some(InsertTextFormat::SNIPPET),
-                    ..Default::default()
-                })
-            }
-
-            return Ok(Some(CompletionResponse::Array(items)));
-        }
-
-        let tables = cqlsh::query_g_tables(&self.config)
+        if let Some(tables) = self
+            .get_table_completions(position)
             .await
             .unwrap_or_else(|e| {
-                info!("Error: {e}");
-                vec![]
-            });
-
-        let mut items = Vec::<CompletionItem>::new();
-
-        for table in tables {
-            items.push(CompletionItem {
-                label: table.united(),
-                kind: Some(CompletionItemKind::VARIABLE),
-                detail: Some(format!("{}", table.united())),
-                insert_text: Some(format!(r#"{}"#, table.united())),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                ..Default::default()
+                info!("{e}");
+                Some(CompletionResponse::Array(vec![]))
             })
+        {
+            return Ok(Some(tables));
         }
 
-        return Ok(Some(CompletionResponse::Array(items)));
+        Ok(Some(CompletionResponse::Array(vec![])))
     }
 
     async fn handle_out_of_string_graph_engine_completion(

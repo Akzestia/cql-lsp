@@ -175,8 +175,7 @@ pub async fn query_keyspace_scoped_tables(
         .await?;
 
     let query = format!(
-        "SELECT column_name FROM system_schema.columns WHERE keyspace_name = '{}' AND table_name = '{}';",
-        keyspace, table
+        "SELECT keyspace_name, table_name FROM system_schema.tables WHERE keyspace_name = '{keyspace}';"
     );
 
     let result_rows = session

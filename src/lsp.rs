@@ -1,5 +1,5 @@
-use log::info;
-use regex::Regex;
+use log::{info, warn};
+use std::fs;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 

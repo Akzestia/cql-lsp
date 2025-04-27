@@ -46,6 +46,8 @@ impl Document {
 }
 
 impl Backend {
+    // -----------------------------[Helper Functions]-----------------------------
+
     fn is_in_string_literal(line: &str, position: u32) -> bool {
         let prefix = match line.get(..position as usize) {
             Some(p) => p,
@@ -71,6 +73,254 @@ impl Backend {
         }
 
         in_double_quotes || in_single_quotes
+    }
+
+    // -----------------------------[Formatting]-----------------------------
+
+    fn remove_leading_spaces_wildcards(&self, line: &mut String) {
+        let mut index = 0;
+        let mut met_space = false;
+
+        while index < line.len() {
+            if !met_space
+                && line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failed RLSSC: Index {index}");
+                    '_'
+                }) == ' '
+            {
+                met_space = true;
+            }
+
+            if met_space
+                && line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failes RLSSC: Index {index}");
+                    '_'
+                }) != ' '
+            {
+                met_space = false;
+            }
+
+            if met_space
+                && index != line.len() - 1
+                && (line.chars().nth(index + 1).unwrap_or_else(|| {
+                    info!("Failed RLSSC: Index {index}");
+                    '_'
+                }) == ' '
+                    || line.chars().nth(index + 1).unwrap_or_else(|| {
+                        info!("Failed RLSSC: Index {index}");
+                        '_'
+                    }) == ';'
+                    || line.chars().nth(index + 1).unwrap_or_else(|| {
+                        info!("Failed RLSSC: Index {index}");
+                        '_'
+                    }) == ','
+                    || line.chars().nth(index + 1).unwrap_or_else(|| {
+                        info!("Failed RLSSC: Index {index}");
+                        '_'
+                    }) == ')')
+            {
+                line.remove(index);
+                met_space = false;
+                if index >= 2 {
+                    index -= 2;
+                } else {
+                    index -= 1;
+                }
+            }
+
+            index += 1;
+        }
+    }
+
+    fn fix_semi_colon(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+
+        while index < lines.len() {
+            info!("While INDEXX[{index}]");
+            self.remove_leading_spaces_wildcards(&mut lines[index]);
+            index += 1;
+        }
+    }
+
+    fn fix_duplicate_semi_colon(&self, line: &mut String) {
+        let mut last_colon = false;
+        let mut index = 0;
+
+        info!("Original: {line}");
+
+        /*
+            The reason for using unwrap_or_else is
+            that when line contains Japanese (non-standart range ASCII)
+            the line.len() isn't represented correctly and will lead
+            to out of bounds access
+        */
+        while index < line.len() {
+            info!(
+                "Index: {index} Line {line} Char {}",
+                line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failed: Index {index}");
+                    '_'
+                })
+            );
+            if !last_colon
+                && line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failed: Index {index}");
+                    '_'
+                }) == ';'
+            {
+                last_colon = true;
+            } else if last_colon
+                && line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failed: Index {index}");
+                    '_'
+                }) == ';'
+            {
+                line.remove(index);
+                last_colon = false;
+                if index >= 2 {
+                    index -= 2;
+                } else {
+                    index -= 1;
+                }
+            } else if line.chars().nth(index).unwrap_or_else(|| {
+                info!("Failed: Index {index}");
+                '_'
+            }) != ';'
+            {
+                last_colon = false;
+            }
+            index += 1;
+        }
+
+        info!("After colon fix: {line}");
+    }
+
+    // Removes any duplicate spaces
+    fn fix_spacing(&self, line: &mut String) {
+        let mut last_space = false;
+        let mut index = 0;
+
+        /*
+            The reason for using unwrap_or_else is
+            that when line contains Japanese (non-standart range ASCII)
+            the line.len() isn't represented correctly and will lead
+            to out of bounds access
+        */
+        while index < line.len() {
+            info!(
+                "Index: {index} Line {line} Char {}",
+                line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failed: Index {index}");
+                    '_'
+                })
+            );
+            if !last_space
+                && line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failed: Index {index}");
+                    '_'
+                }) == ' '
+            {
+                last_space = true;
+            } else if last_space
+                && line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failed: Index {index}");
+                    '_'
+                }) == ' '
+            {
+                line.remove(index);
+                last_space = false;
+                if index >= 2 {
+                    index -= 2;
+                } else {
+                    index -= 1;
+                }
+            } else if line.chars().nth(index).unwrap_or_else(|| {
+                info!("Failed: Index {index}");
+                '_'
+            }) != ' '
+            {
+                last_space = false;
+            }
+            index += 1;
+        }
+    }
+
+    async fn format_file(&self, lines: &Vec<&str>) -> Vec<TextEdit> {
+        let mut edits = Vec::<TextEdit>::new();
+        let mut working_vec: Vec<String> = lines.into_iter().map(|s| s.to_string()).collect();
+
+        /*
+            Correct formatting order
+
+            trim()
+            duplicates()
+            moves()
+        */
+        for index in 0..working_vec.len() {
+            working_vec[index] = working_vec[index].trim().to_string();
+            self.fix_spacing(&mut working_vec[index]);
+            self.fix_duplicate_semi_colon(&mut working_vec[index]);
+        }
+
+        self.fix_semi_colon(&mut working_vec);
+
+        for (index, line) in working_vec.into_iter().enumerate() {
+            info!("Lin:en: {index}, {}", lines[index].len());
+            info!("XAAR");
+
+            let text_edit = TextEdit {
+                range: Range {
+                    start: Position {
+                        line: index as u32,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: index as u32,
+                        character: lines[index].len() as u32,
+                    },
+                },
+                new_text: line,
+            };
+
+            edits.push(text_edit);
+        }
+
+        edits
+    }
+
+    // -----------------------------[Completions]-----------------------------
+
+    fn is_use_keyspace_line(&self, s: &str) -> bool {
+        info!("Checking: {s}");
+
+        // use "x";
+        if s.len() < 8 {
+            info!("Length is to low");
+            return false;
+        }
+
+        let input_str: Vec<char> = s.trim().chars().collect();
+
+        let use_statement = String::from_iter(&input_str[0..=2]);
+
+        if use_statement.to_lowercase() != "use" {
+            return false;
+        }
+
+        if (input_str[3] != '\"'
+            && input_str[input_str.len() - 2] != '\"'
+            && input_str[input_str.len() - 1] != ';')
+            || (input_str[3] != '\"'
+                && input_str[input_str.len() - 2] != '\"'
+                && input_str[input_str.len() - 1] != ';')
+        {
+            info!("PRESS F");
+            return false;
+        }
+
+        info!("PRESS W");
+
+        true
     }
 
     async fn get_keyspaces(&self) -> Vec<String> {
@@ -262,40 +512,196 @@ impl Backend {
         false
     }
 
-    async fn latest_keyspace(&self) -> Option<String> {
+    #[warn(unused_mut)]
+    async fn latest_keyspace(&self, position: &Position) -> Option<String> {
         let current = self.current_document.read().await;
 
         if let Some(ref document_lock) = *current {
             let document = document_lock.read().await;
 
-            let re = Regex::new(r#"(?i)\buse\s+['"]([^'"]+)['"]\s*;"#).unwrap();
+            info!("Document Text: [{:?}]", document.text.as_bytes());
 
-            let mut latest: Option<String> = None;
+            let split: Vec<&str> = document.text.split('\n').collect();
 
-            for caps in re.captures_iter(&document.text) {
-                if let Some(keyspace) = caps.get(1) {
-                    latest = Some(keyspace.as_str().to_string());
+            let mut keyspace_latest: String = "".to_string();
+            let mut pos = 0;
+
+            for str in split {
+                let index = position.line;
+                info!("Pos: {pos} | {index}");
+                info!("Strings: {str} | {pos}");
+                if index == pos {
+                    info!("hit line");
+                    if keyspace_latest.len() > 0 {
+                        return Some(keyspace_latest);
+                    }
+                    return None;
+                }
+                pos += 1;
+
+                if self.is_use_keyspace_line(str) {
+                    let istr: Vec<char> = str.trim().chars().collect();
+                    let trimeed = str.replace(' ', "");
+                    info!("Trimed str: {trimeed}");
+                    let extracted_ksp = String::from_iter(&istr[5..istr.len() - 2]);
+                    keyspace_latest = extracted_ksp.clone();
                 }
             }
 
-            return latest;
+            if keyspace_latest.len() > 0 {
+                return Some(keyspace_latest);
+            }
         }
 
         None
     }
 
-    async fn get_fields(&self, line: &str, position: u32) -> Vec<String> {
-        let keyspace = self.latest_keyspace().await;
+    fn should_field_be_edit(&self, line: &str) -> bool {
+        let lower_case = line.to_lowercase();
+        let line_split: Vec<&str> = lower_case.split(' ').collect();
 
-        let items = cqlsh::query_fields(&self.config, "system", "local").await;
+        if !line_split.contains(&"from") {
+            return true;
+        }
 
-        match items {
-            Ok(r) => r,
-            Err(e) => {
-                info!("{:?}", e.to_string());
-                vec![]
+        let mut met_from_kw = false;
+
+        for w in line_split {
+            if met_from_kw {
+                return !w.chars().any(|c| c.is_alphabetic());
+            }
+
+            if w == "from" {
+                met_from_kw = true;
             }
         }
+
+        true
+    }
+
+    async fn get_fields(
+        &self,
+        line: &str,
+        position: &Position,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        if let Some(keyspace) = self.latest_keyspace(position).await {
+            info!("Latest: [{keyspace}]");
+
+            let items = cqlsh::query_keyspace_scoped_fields(&self.config, &keyspace)
+                .await
+                .unwrap_or_else(|e| {
+                    info!("Error {:?}", e);
+                    vec![]
+                });
+
+            info!("Got items: {:?}", items);
+
+            let mut result: Vec<CompletionItem> = Vec::new();
+
+            if self.should_field_be_edit(line) {
+                for item in items {
+                    let text_edit = TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: position.line,
+                                character: 0,
+                            },
+                            end: Position {
+                                line: position.line,
+                                character: 0,
+                            },
+                        },
+                        new_text: "".to_string(),
+                    };
+
+                    result.push(CompletionItem {
+                        label: format!(
+                            "{} | {}.{}",
+                            item.column_name, item.keyspace_name, item.table_name,
+                        ),
+                        kind: Some(CompletionItemKind::FIELD),
+                        text_edit: Some(CompletionTextEdit::Edit(text_edit)),
+                        ..Default::default()
+                    });
+                }
+            } else {
+                for item in items {
+                    result.push(CompletionItem {
+                        label: format!(
+                            "{} | {}.{}",
+                            item.column_name, item.keyspace_name, item.table_name,
+                        ),
+                        kind: Some(CompletionItemKind::FIELD),
+                        insert_text: Some(format!("{}", item.column_name)),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            return Ok(Some(CompletionResponse::Array(result)));
+        }
+
+        /*
+            Text Edit
+
+            line.len() == position.character;
+            SELECT id FROM ;
+            SELECT name ;
+
+            Insert Text
+
+            ... FROM keyspace_name.table_name;
+        */
+
+        let items = cqlsh::query_g_fields(&self.config)
+            .await
+            .unwrap_or_else(|e| {
+                info!("Error {:?}", e);
+                vec![]
+            });
+
+        let mut result: Vec<CompletionItem> = Vec::new();
+
+        if self.should_field_be_edit(line) {
+            for item in items {
+                let text_edit = TextEdit {
+                    range: Range {
+                        start: Position {
+                            line: position.line,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: position.line,
+                            character: 0,
+                        },
+                    },
+                    new_text: "".to_string(),
+                };
+
+                result.push(CompletionItem {
+                    label: format!(
+                        "{} | {}.{}",
+                        item.column_name, item.keyspace_name, item.table_name,
+                    ),
+                    kind: Some(CompletionItemKind::VALUE),
+                    text_edit: Some(CompletionTextEdit::Edit(text_edit)),
+                    ..Default::default()
+                });
+            }
+        } else {
+            for item in items {
+                result.push(CompletionItem {
+                    label: format!(
+                        "{} | {}.{}",
+                        item.column_name, item.keyspace_name, item.table_name,
+                    ),
+                    kind: Some(CompletionItemKind::VALUE),
+                    ..Default::default()
+                });
+            }
+        }
+
+        Ok(Some(CompletionResponse::Array(result)))
     }
 
     fn should_suggest_fields(&self, line: &str, position: u32) -> bool {
@@ -307,11 +713,15 @@ impl Backend {
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        info!("Splitted F: {:?}", splitted);
+        info!("Split: {:?}\nSplit Len: {}", splitted, splitted.len());
 
         if !splitted.contains(&"select") || splitted.contains(&"*") || splitted.contains(&"from") {
-            info!("Splitted FAILURE");
             return false;
+        }
+
+        if splitted.contains(&"select") && splitted.len() == 1 {
+            info!("Returned W");
+            return true;
         }
 
         if splitted.len() > 2 && !splitted[splitted.len() - 2].contains(&",") {
@@ -322,10 +732,68 @@ impl Backend {
             return false;
         }
 
-        info!("Splitted SUCCESS");
+        true
+    }
+
+    fn should_suggest_from(&self, line: &str, position: u32) -> bool {
+        let prefix = match line.get(..position as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let trimmed_prefix = prefix.trim_end().to_lowercase();
+        let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        if !splitted.contains(&"select") || splitted.contains(&"from") {
+            return false;
+        }
+
+        if splitted.len() <= 2 && splitted.contains(&"select") {
+            return false;
+        }
+
+        if splitted.contains(&"select")
+            && !splitted[splitted.len() - 1].contains(&",")
+            && trimmed_prefix.len() != prefix.len()
+        {
+            info!("From returned TRUE");
+            return true;
+        }
+
+        false
+    }
+
+    async fn get_table_completions(
+        &self,
+        line: &str,
+        position: &Position,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        return Ok(Some(CompletionResponse::Array(vec![])));
+    }
+
+    fn should_ssuggest_table_completions(&self, line: &str, position: u32) -> bool {
+        let prefix = match line.get(..position as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let trimmed_prefix = prefix.trim_end().to_lowercase();
+        let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        if !splitted.contains(&"select") && !splitted.contains(&"from") {
+            return false;
+        }
+
+        if !(splitted[splitted.len() - 2].contains(&"from")
+            || splitted[splitted.len() - 1].contains(&"from"))
+        {
+            return false;
+        }
 
         true
     }
+
+    // -----------------------------[Handlers]-----------------------------
 
     async fn handle_in_string_keyspace_completion(
         &self,
@@ -443,27 +911,115 @@ impl Backend {
     async fn handle_fields_completion(
         &self,
         line: &str,
-        position: u32,
+        position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Offering fields completions");
 
-        let mut items: Vec<CompletionItem> = Vec::new();
-
-        for item in self.get_fields(line, position).await {
-            info!("Suggested Items Str: {:?}", item);
-            items.push(CompletionItem {
-                label: item.clone(),
-                kind: Some(CompletionItemKind::VALUE),
-                ..Default::default()
-            });
+        if let Some(response) = self.get_fields(line, position).await? {
+            return Ok(Some(response));
         }
 
-        info!("Suggested Items collection: {:?}", items);
+        return Ok(Some(CompletionResponse::Array(vec![])));
+    }
+
+    fn handle_from_completion(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        info!("Offering FROM completions");
+
+        return Ok(Some(CompletionResponse::Array(vec![
+            CompletionItem {
+                label: "FROM".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Upper case FROM keyword".to_string()),
+                documentation: Some(Documentation::String("FROM keyword".to_string())),
+                insert_text: Some(r#"FROM $0"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "from".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Lower case from keyword".to_string()),
+                documentation: Some(Documentation::String("FROM keyword".to_string())),
+                insert_text: Some(r#"from $0"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ])));
+    }
+
+    async fn handle_table_completion(
+        &self,
+        position: &Position,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        info!("Offering TABLE completions");
+
+        if let Some(keyspace) = self.latest_keyspace(&position).await {
+            let tables = cqlsh::query_keyspace_scoped_tables(&self.config, &keyspace)
+                .await
+                .unwrap_or_else(|e| {
+                    info!("Error: {e}");
+                    vec![]
+                });
+
+            let tables_unscoped = cqlsh::query_g_tables(&self.config)
+                .await
+                .unwrap_or_else(|e| {
+                    info!("Error: {e}");
+                    vec![]
+                });
+
+            let mut items = Vec::<CompletionItem>::new();
+
+            for table in tables {
+                items.push(CompletionItem {
+                    label: table.table_name.clone(),
+                    // Keyword to display scoped tables in different color
+                    kind: Some(CompletionItemKind::KEYWORD),
+                    detail: Some(format!("{}", table.united())),
+                    insert_text: Some(format!(r#"{}"#, table.table_name)),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    ..Default::default()
+                })
+            }
+
+            for tablex in tables_unscoped {
+                items.push(CompletionItem {
+                    label: tablex.united(),
+                    kind: Some(CompletionItemKind::VARIABLE),
+                    detail: Some(format!("{}", tablex.united())),
+                    insert_text: Some(format!(r#"{}"#, tablex.united())),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    ..Default::default()
+                })
+            }
+
+            return Ok(Some(CompletionResponse::Array(items)));
+        }
+
+        let tables = cqlsh::query_g_tables(&self.config)
+            .await
+            .unwrap_or_else(|e| {
+                info!("Error: {e}");
+                vec![]
+            });
+
+        let mut items = Vec::<CompletionItem>::new();
+
+        for table in tables {
+            items.push(CompletionItem {
+                label: table.united(),
+                kind: Some(CompletionItemKind::VARIABLE),
+                detail: Some(format!("{}", table.united())),
+                insert_text: Some(format!(r#"{}"#, table.united())),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            })
+        }
 
         return Ok(Some(CompletionResponse::Array(items)));
     }
 
-    async fn handle_graph_engine_completion(
+    async fn handle_out_of_string_graph_engine_completion(
         &self,
         line: &str,
         position: u32,
@@ -471,6 +1027,34 @@ impl Backend {
         info!("Offering graph engine completions");
 
         let mut items: Vec<CompletionItem> = Vec::new();
+
+        for item in self.get_graph_engine_types() {
+            items.push(CompletionItem {
+                label: item.clone(),
+                kind: Some(CompletionItemKind::VALUE),
+                ..Default::default()
+            });
+        }
+
+        return Ok(Some(CompletionResponse::Array(items)));
+    }
+
+    async fn handle_in_string_graph_engine_completion(
+        &self,
+        line: &str,
+        position: u32,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        info!("Offering graph engine completions");
+
+        let mut items: Vec<CompletionItem> = Vec::new();
+
+        for item in self.get_graph_engine_types() {
+            items.push(CompletionItem {
+                label: item.clone(),
+                kind: Some(CompletionItemKind::VALUE),
+                ..Default::default()
+            });
+        }
 
         return Ok(Some(CompletionResponse::Array(items)));
     }
@@ -509,10 +1093,33 @@ impl LanguageServer for Backend {
                     ]),
                     ..Default::default()
                 }),
+                document_formatting_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             ..Default::default()
         })
+    }
+
+    async fn formatting(
+        &self,
+        params: DocumentFormattingParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<Vec<TextEdit>>> {
+        let document = params.text_document.uri;
+
+        if let Some(current_doc) = self.documents.read().await.get(&document) {
+            let lines: Vec<&str> = current_doc.split('\n').collect();
+            let mut pos = 0;
+
+            for n in 0..lines.len() {
+                info!("Line[{pos}]: {}", lines[n]);
+
+                pos += 1;
+            }
+
+            return Ok(Some(self.format_file(&lines).await));
+        } else {
+            return Ok(Some(vec![]));
+        }
     }
 
     async fn initialized(&self, _: InitializedParams) {
@@ -596,15 +1203,40 @@ impl LanguageServer for Backend {
 
         if self.should_suggest_fields(line, position.character)
             && !self.should_suggest_keyspaces(line, position.character)
+            && !self.should_suggest_from(line, position.character)
         {
-            return self
-                .handle_fields_completion(line, position.character)
-                .await;
+            return self.handle_fields_completion(line, &position).await;
+        }
+
+        if self.should_suggest_from(line, position.character)
+            && !self.should_suggest_fields(line, position.character)
+            && !self.should_suggest_keyspaces(line, position.character)
+        {
+            return self.handle_from_completion();
+        }
+
+        if self.should_ssuggest_table_completions(line, position.character)
+            && !self.should_suggest_fields(line, position.character)
+            && !self.should_suggest_from(line, position.character)
+        {
+            return self.handle_table_completion(&position).await;
+        }
+
+        if self.should_suggest_graph_engine_types(line, position.character) {
+            return if in_string {
+                self.handle_in_string_graph_engine_completion(line, position.character)
+                    .await
+            } else {
+                self.handle_out_of_string_graph_engine_completion(line, position.character)
+                    .await
+            };
         }
 
         if !in_string
             && !self.should_suggest_fields(line, position.character)
             && !self.should_suggest_keyspaces(line, position.character)
+            && !self.should_suggest_graph_engine_types(line, position.character)
+            && !self.should_suggest_from(line, position.character)
         {
             return self.handle_keywords_completion();
         }

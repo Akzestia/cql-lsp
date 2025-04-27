@@ -1,13 +1,25 @@
-use std::time::Duration;
-
 use futures::stream::StreamExt;
 use scylla::{
     DeserializeRow,
     client::session_builder::SessionBuilder,
     statement::{Statement, prepared::PreparedStatement},
 };
+use std::fmt;
+use std::time::Duration;
 
 use log::info;
+
+#[derive(DeserializeRow)]
+pub struct Table {
+    pub keyspace_name: String,
+    pub table_name: String,
+}
+
+impl Table {
+    pub fn united(&self) -> String {
+        format!("{}.{}", self.keyspace_name, self.table_name)
+    }
+}
 
 #[derive(DeserializeRow)]
 pub struct KeySpace {

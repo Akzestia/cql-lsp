@@ -113,11 +113,60 @@ pub async fn query_keyspaces(
     Ok(items)
 }
 
-pub async fn query_fields(
+pub async fn query_g_fields(
+    config: &CqlSettings,
+) -> Result<Vec<Column>, Box<dyn std::error::Error>> {
+    let session = SessionBuilder::new()
+        .known_node(&config.url)
+        .user(&config.user, &config.pswd)
+        .connection_timeout(Duration::from_secs(3))
+        .build()
+        .await?;
+    let mut items = Vec::<Column>::new();
+
+    let tables = query_g_tables(config).await?;
+
+    for table in tables {
+        let query = format!(
+            "SELECT column_name, type  FROM system_schema.columns WHERE keyspace_name = '{}' AND table_name = '{}';",
+            table.keyspace_name, table.table_name
+        );
+
+        let result_rows = session
+            .query_unpaged(query, &[])
+            .await?
+            .into_rows_result()?;
+
+        for row in result_rows.rows::<(String, String)>()? {
+            let column = row?;
+            info!("Found field: {}", column.0);
+            items.push(Column {
+                column_name: column.0,
+                keyspace_name: table.keyspace_name.clone(),
+                table_name: table.table_name.clone(),
+                column_type: column.1,
+            });
+        }
+    }
+
+    Ok(items)
+}
+
+pub async fn check_connection(config: &CqlSettings) -> Result<bool, Box<dyn std::error::Error>> {
+    _ = SessionBuilder::new()
+        .known_node(&config.url)
+        .user(&config.user, &config.pswd)
+        .connection_timeout(Duration::from_secs(3))
+        .build()
+        .await?;
+
+    Ok(true)
+}
+
+pub async fn query_keyspace_scoped_tables(
     config: &CqlSettings,
     keyspace: &str,
-    table: &str,
-) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+) -> Result<Vec<Table>, Box<dyn std::error::Error>> {
     let session = SessionBuilder::new()
         .known_node(&config.url)
         .user(&config.user, &config.pswd)

@@ -1253,7 +1253,7 @@ impl LanguageServer for Backend {
 
         if self.should_suggest_keyspaces(line, position.character) {
             return if in_string {
-                self.handle_in_string_keyspace_completion(line, position)
+                self.handle_in_string_keyspace_completion(line, &position)
                     .await
             } else {
                 self.handle_out_of_string_keyspace_completion().await

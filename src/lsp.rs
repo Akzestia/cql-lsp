@@ -329,36 +329,35 @@ impl Backend {
         match items {
             Ok(r) => r.into_iter().collect(),
             Err(e) => {
-                info!("{:?}", e.to_string());
                 vec![]
             }
         }
     }
 
-    // Needs rework
     fn should_suggest_keyspaces(&self, line: &str, position: u32) -> bool {
         let prefix = match line.get(..position as usize) {
             Some(p) => p,
             None => return false,
         };
 
-        let trimmed_prefix = prefix.trim_end();
-        if let Some(stripped) = trimmed_prefix.to_lowercase().strip_prefix("use") {
-            let is_whole_word = trimmed_prefix.len() == "use".len()
-                || !trimmed_prefix
-                    .chars()
-                    .nth("use".len())
-                    .map(|c| c.is_alphanumeric())
-                    .unwrap_or(false);
+        let trimmed_prefix = prefix.trim_end().to_lowercase();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-            if is_whole_word {
-                let after_use = stripped.trim_start();
-                return after_use.is_empty()
-                    || after_use.starts_with('"')
-                    || after_use.starts_with('\'');
+        if !split.contains(&"use") {
+            return false;
+        }
+
+        if split.len() > 1 && split[0] != "use" {
+            return false;
+        }
+
+        for c in line.chars().enumerate() {
+            if c.1 == ';' && c.0 < position as usize {
+                return false;
             }
         }
-        false
+
+        true
     }
 
     fn get_graph_engine_types(&self) -> Vec<String> {

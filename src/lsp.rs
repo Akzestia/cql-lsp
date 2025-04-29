@@ -265,9 +265,6 @@ impl Backend {
         self.fix_semi_colon(&mut working_vec);
 
         for (index, line) in working_vec.into_iter().enumerate() {
-            info!("Lin:en: {index}, {}", lines[index].len());
-            info!("XAAR");
-
             let text_edit = TextEdit {
                 range: Range {
                     start: Position {
@@ -291,11 +288,8 @@ impl Backend {
     // -----------------------------[Completions]-----------------------------
 
     fn is_use_keyspace_line(&self, s: &str) -> bool {
-        info!("Checking: {s}");
-
         // use "x";
         if s.len() < 8 {
-            info!("Length is to low");
             return false;
         }
 
@@ -314,11 +308,8 @@ impl Backend {
                 && input_str[input_str.len() - 2] != '\"'
                 && input_str[input_str.len() - 1] != ';')
         {
-            info!("PRESS F");
             return false;
         }
-
-        info!("PRESS W");
 
         true
     }
@@ -712,14 +703,11 @@ impl Backend {
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        info!("Split: {:?}\nSplit Len: {}", splitted, splitted.len());
-
         if !splitted.contains(&"select") || splitted.contains(&"*") || splitted.contains(&"from") {
             return false;
         }
 
         if splitted.contains(&"select") && splitted.len() == 1 {
-            info!("Returned W");
             return true;
         }
 
@@ -755,7 +743,6 @@ impl Backend {
             && !splitted[splitted.len() - 1].contains(&",")
             && trimmed_prefix.len() != prefix.len()
         {
-            info!("From returned TRUE");
             return true;
         }
 
@@ -769,17 +756,11 @@ impl Backend {
         if let Some(keyspace) = self.latest_keyspace(&position).await {
             let tables = cqlsh::query_keyspace_scoped_tables(&self.config, &keyspace)
                 .await
-                .unwrap_or_else(|e| {
-                    info!("Error: {e}");
-                    vec![]
-                });
+                .unwrap_or_else(|e| vec![]);
 
             let tables_unscoped = cqlsh::query_g_tables(&self.config)
                 .await
-                .unwrap_or_else(|e| {
-                    info!("Error: {e}");
-                    vec![]
-                });
+                .unwrap_or_else(|e| vec![]);
 
             let mut items = Vec::<CompletionItem>::new();
 
@@ -811,10 +792,7 @@ impl Backend {
 
         let tables = cqlsh::query_g_tables(&self.config)
             .await
-            .unwrap_or_else(|e| {
-                info!("Error: {e}");
-                vec![]
-            });
+            .unwrap_or_else(|e| vec![]);
 
         let mut items = Vec::<CompletionItem>::new();
 

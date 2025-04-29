@@ -10,7 +10,6 @@ use crate::consts::*;
 use crate::cqlsh::{self, Column, CqlSettings};
 
 /*
-
     Note:
 
     The lsp code contains a HUGE amount of code so,

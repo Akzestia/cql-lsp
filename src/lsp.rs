@@ -10,6 +10,7 @@ use crate::consts::*;
 use crate::cqlsh::{self, Column, CqlSettings};
 
 /*
+
     Note:
 
     The lsp code contains a HUGE amount of code so,
@@ -17,7 +18,6 @@ use crate::cqlsh::{self, Column, CqlSettings};
 
     XAR-1: vec[] of keywords
     XAR-2: vec[] of types
-
 */
 
 #[derive(Debug)]

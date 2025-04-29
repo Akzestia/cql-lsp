@@ -1,5 +1,5 @@
 use log::{info, warn};
-use std::fs;
+
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 
@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::consts::*;
-use crate::cqlsh::{self, CqlSettings};
+use crate::cqlsh::{self, Column, CqlSettings};
 
 /*
     Note:

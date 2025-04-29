@@ -569,6 +569,48 @@ impl Backend {
         true
     }
 
+    fn get_start_offset(&self, line: &str, position: &Position) -> u32 {
+        let mut index = position.character as usize;
+
+        while index > 0 {
+            if let Some(char) = line.chars().nth(index) {
+                if char == ' ' {
+                    return index as u32;
+                }
+            }
+
+            index -= 1;
+        }
+
+        0
+    }
+
+    fn column_to_text_edit(
+        &self,
+        line: &str,
+        column: &Column,
+        lates_keyspace: Option<&str>,
+    ) -> String {
+        let mut result_str: String;
+
+        if let Some(keyspace) = lates_keyspace {
+            if keyspace == column.keyspace_name {
+                result_str = format!("{}, $0 FROM {};", column.column_name, column.table_name);
+            } else {
+                result_str = format!(
+                    "{}, $0 FROM {}.{};",
+                    column.column_name, column.keyspace_name, column.table_name
+                );
+            }
+            return result_str;
+        }
+        result_str = format!(
+            "{}, $0 FROM {}.{};",
+            column.column_name, column.keyspace_name, column.table_name
+        );
+        result_str
+    }
+
     async fn get_fields(
         &self,
         line: &str,
@@ -579,29 +621,34 @@ impl Backend {
 
             let items = cqlsh::query_keyspace_scoped_fields(&self.config, &keyspace)
                 .await
-                .unwrap_or_else(|e| {
-                    info!("Error {:?}", e);
-                    vec![]
-                });
-
-            info!("Got items: {:?}", items);
+                .unwrap_or_else(|e| vec![]);
 
             let mut result: Vec<CompletionItem> = Vec::new();
 
             if self.should_field_be_edit(line) {
                 for item in items {
+                    let text_edit_str = self.column_to_text_edit(line, &item, Some(&keyspace));
+
+                    info!(
+                        "TEXT: {} | {}-{}",
+                        text_edit_str,
+                        self.get_start_offset(line, position),
+                        text_edit_str.len() as u32
+                    );
+
                     let text_edit = TextEdit {
                         range: Range {
                             start: Position {
                                 line: position.line,
-                                character: 0,
+                                character: self.get_start_offset(line, position) + 1,
                             },
                             end: Position {
                                 line: position.line,
-                                character: 0,
+                                // Insane wierd shit :D
+                                character: line.len() as u32,
                             },
                         },
-                        new_text: "".to_string(),
+                        new_text: text_edit_str,
                     };
 
                     result.push(CompletionItem {
@@ -609,7 +656,7 @@ impl Backend {
                             "{} | {}.{}",
                             item.column_name, item.keyspace_name, item.table_name,
                         ),
-                        kind: Some(CompletionItemKind::FIELD),
+                        kind: Some(CompletionItemKind::SNIPPET),
                         text_edit: Some(CompletionTextEdit::Edit(text_edit)),
                         ..Default::default()
                     });
@@ -627,7 +674,6 @@ impl Backend {
                     });
                 }
             }
-
             return Ok(Some(CompletionResponse::Array(result)));
         }
 
@@ -654,18 +700,20 @@ impl Backend {
 
         if self.should_field_be_edit(line) {
             for item in items {
+                let text_edit_str = self.column_to_text_edit(line, &item, None);
+
                 let text_edit = TextEdit {
                     range: Range {
                         start: Position {
                             line: position.line,
-                            character: 0,
+                            character: self.get_start_offset(line, position) + 1,
                         },
                         end: Position {
                             line: position.line,
-                            character: 0,
+                            character: line.len() as u32,
                         },
                     },
-                    new_text: "".to_string(),
+                    new_text: text_edit_str,
                 };
 
                 result.push(CompletionItem {
@@ -673,7 +721,7 @@ impl Backend {
                         "{} | {}.{}",
                         item.column_name, item.keyspace_name, item.table_name,
                     ),
-                    kind: Some(CompletionItemKind::VALUE),
+                    kind: Some(CompletionItemKind::SNIPPET),
                     text_edit: Some(CompletionTextEdit::Edit(text_edit)),
                     ..Default::default()
                 });
@@ -686,6 +734,7 @@ impl Backend {
                         item.column_name, item.keyspace_name, item.table_name,
                     ),
                     kind: Some(CompletionItemKind::VALUE),
+                    insert_text: Some(format!("{}", item.column_name)),
                     ..Default::default()
                 });
             }

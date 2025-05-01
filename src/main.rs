@@ -1,5 +1,5 @@
 use cql_lsp::cqlsh::CqlSettings;
-use cql_lsp::lsp::*;
+use cql_lsp::lsp::Backend;
 use cql_lsp::setup::setup_logger;
 use log::info;
 use std::collections::HashMap;
@@ -36,8 +36,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let settings = CqlSettings::from_env(&url, &pswd, &user);
-
-    info!("Server starting");
 
     let stdin = stdin();
     let stdout = stdout();

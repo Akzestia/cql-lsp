@@ -1,6 +1,90 @@
 use once_cell::sync::Lazy;
 use tower_lsp::lsp_types::*;
 
+/*
+    Lower case cql_keywords
+
+    Separate list of keywords which
+    are starting CQL commands;
+
+    e.g
+
+    |ALTER| TABLE ...
+    |ALTER| MATERIALIZED VIEW ...
+
+    |USE| ...
+
+    |INSERT| ... INTO ...
+*/
+pub static CQL_KEYWORDS_LWC: Lazy<Vec<String>> = Lazy::new(|| {
+    vec![
+        "alter".to_string(),
+        /*
+            because batch involves using
+
+            BEGIN BATCH
+
+            it's represented as begin kw
+        */
+        "begin".to_string(),
+        "apply".to_string(),
+        "create".to_string(),
+        "drop".to_string(),
+        "grant".to_string(),
+        "list".to_string(),
+        "revoke".to_string(),
+        "select".to_string(),
+        "truncate".to_string(),
+        "use".to_string(),
+        /*
+            Dml statements keywords
+
+            Dml statements CAN be a part of BATCH!
+        */
+        "delete".to_string(),
+        "insert".to_string(),
+        "update".to_string(),
+        /*
+            Unsupported keywords
+
+            Those which has no documentation,
+            or syntax synopsis described on DataStax HCD
+        */
+        "restrcit".to_string(),
+        "unrestrict".to_string(),
+    ]
+});
+
+pub static CQL_TYPES_LWC: Lazy<Vec<String>> = Lazy::new(|| {
+    vec![
+        "ascii".to_string(),
+        "bigint".to_string(),
+        "blob".to_string(),
+        "boolean".to_string(),
+        "counter".to_string(),
+        "date".to_string(),
+        "decimal".to_string(),
+        "double".to_string(),
+        "float".to_string(),
+        "frozen".to_string(),
+        "inet".to_string(),
+        "int".to_string(),
+        "list".to_string(),
+        "map".to_string(),
+        "set".to_string(),
+        "smallint".to_string(),
+        "text".to_string(),
+        "time".to_string(),
+        "timestamp".to_string(),
+        "timeuuid".to_string(),
+        "tinyint".to_string(),
+        "tuple".to_string(),
+        "uuid".to_string(),
+        "varchar".to_string(),
+        "varint".to_string(),
+    ]
+});
+
 // XAR-1 2.7k lines of pure KEYWORDS だよ　www
 // XAR-1 2.7k lines of pure KEYWORDS that are working だよ :D
 pub static KEYWORDS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {

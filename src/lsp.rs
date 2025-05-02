@@ -116,7 +116,11 @@ impl Backend {
                     || line.chars().nth(index + 1).unwrap_or_else(|| {
                         info!("Failed RLSSC: Index {index}");
                         '_'
-                    }) == ')')
+                    }) == ')'
+                    || line.chars().nth(index + 1).unwrap_or_else(|| {
+                        info!("Failed RLSSC: Index {index}");
+                        '_'
+                    }) == '>')
             {
                 line.remove(index);
                 met_space = false;
@@ -131,16 +135,134 @@ impl Backend {
         }
     }
 
-    fn fix_semi_colon(&self, lines: &mut Vec<String>) {
+    fn remove_tailing_spaces_wildcards(&self, line: &mut String) {
         let mut index = 0;
+        let mut met_wild_card = false;
 
-        while index < lines.len() {
-            info!("While INDEXX[{index}]");
-            self.remove_leading_spaces_wildcards(&mut lines[index]);
+        while index < line.len() {
+            if !met_wild_card
+                && (line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failed RLSSC: Index {index}");
+                    '_'
+                }) == '('
+                    || line.chars().nth(index).unwrap_or_else(|| {
+                        info!("Failed RLSSC: Index {index}");
+                        '_'
+                    }) == '<')
+            {
+                met_wild_card = true;
+            }
+
+            if met_wild_card
+                && line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failes RLSSC: Index {index}");
+                    '_'
+                }) != '('
+                && line.chars().nth(index).unwrap_or_else(|| {
+                    info!("Failes RLSSC: Index {index}");
+                    '_'
+                }) != '<'
+            {
+                met_wild_card = false;
+            }
+
+            if met_wild_card
+                && index != line.len() - 1
+                && line.chars().nth(index + 1).unwrap_or_else(|| {
+                    info!("Failed RLSSC: Index {index}");
+                    '_'
+                }) == ' '
+            {
+                line.remove(index + 1);
+                met_wild_card = false;
+                if index >= 2 {
+                    index -= 2;
+                } else {
+                    index -= 1;
+                }
+            }
+
             index += 1;
         }
     }
 
+    fn is_string_literal(&self, line: &str) -> bool {
+        let mut met_v1_op_bracket = false;
+        let mut met_v2_op_bracket = false;
+
+        for char in line.chars() {
+            if met_v1_op_bracket && char == '\'' {
+                return true;
+            }
+
+            if met_v2_op_bracket && char == '"' {
+                return true;
+            }
+
+            if !met_v1_op_bracket && char == '\'' {
+                met_v1_op_bracket = true;
+            }
+            if !met_v2_op_bracket && char == '"' {
+                met_v2_op_bracket = true;
+            }
+
+            if met_v1_op_bracket && char == '"' {
+                return false;
+            }
+
+            if met_v2_op_bracket && char == '\'' {
+                return false;
+            }
+        }
+
+        false
+    }
+
+    fn fix_string_literals(&self, lines: &mut Vec<String>) {
+        for line in lines.iter_mut() {
+            let mut position = 0;
+            while position < line.len() {
+                if let Some(start) = line[position..].find('"').map(|p| p + position) {
+                    if let Some(end) = line[start + 1..].find('"').map(|p| p + start + 1) {
+                        let str = String::from(&line[start + 1..end]);
+                        let trimmed = str.trim();
+                        line.replace_range(start + 1..end, trimmed);
+                        position = end + 1;
+                    } else {
+                        position = start + 1;
+                    }
+                } else if let Some(start) = line[position..].find('\'').map(|p| p + position) {
+                    if let Some(end) = line[start + 1..].find('\'').map(|p| p + start + 1) {
+                        let str = String::from(&line[start + 1..end]);
+                        let trimmed = str.trim();
+                        line.replace_range(start + 1..end, trimmed);
+                        position = end + 1;
+                    } else {
+                        position = start + 1;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    /*
+        Removes spaces before ;
+    */
+    fn fix_semi_colon(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+
+        while index < lines.len() {
+            self.remove_leading_spaces_wildcards(&mut lines[index]);
+            self.remove_tailing_spaces_wildcards(&mut lines[index]);
+            index += 1;
+        }
+    }
+
+    /*
+        Removes duplicates of ;
+    */
     fn fix_duplicate_semi_colon(&self, line: &mut String) {
         let mut last_colon = false;
         let mut index = 0;
@@ -206,13 +328,6 @@ impl Backend {
             to out of bounds access
         */
         while index < line.len() {
-            info!(
-                "Index: {index} Line {line} Char {}",
-                line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failed: Index {index}");
-                    '_'
-                })
-            );
             if !last_space
                 && line.chars().nth(index).unwrap_or_else(|| {
                     info!("Failed: Index {index}");
@@ -244,17 +359,243 @@ impl Backend {
         }
     }
 
+    // Removes \n after \n or ( )
+    fn fix_new_lines(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+        let mut last_new_line = false;
+        let mut last_bracket = false;
+
+        while index < lines.len() {
+            if last_new_line && lines[index].len() == 0 {
+                lines.remove(index);
+                if index >= 2 {
+                    index -= 2;
+                } else if index > 0 {
+                    index -= 1;
+                }
+            }
+
+            if last_bracket && lines[index].len() == 0 {
+                lines.remove(index);
+                if index >= 2 {
+                    index -= 2;
+                } else if index > 0 {
+                    index -= 1;
+                }
+            }
+
+            if lines[index].len() == 0 {
+                last_new_line = true;
+            } else {
+                last_new_line = false;
+            }
+
+            if lines[index].contains(&"(") {
+                last_bracket = true;
+            } else {
+                last_bracket = false
+            }
+
+            index += 1;
+        }
+    }
+
+    /*
+        Removes all '\n' inside code_blocks
+    */
+    fn remove_new_lines_from_code_block(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+        let mut inside_code_block = false;
+
+        while index < lines.len() {
+            let line = lines[index].to_lowercase();
+
+            if !inside_code_block && line.len() > 0 && !line.contains(&";") {
+                inside_code_block = true;
+            }
+
+            if inside_code_block && line.contains(&";") {
+                inside_code_block = false;
+            }
+
+            if inside_code_block && line.len() == 0 {
+                lines.remove(index);
+                if index >= 2 {
+                    index -= 2;
+                } else if index > 0 {
+                    index -= 1;
+                }
+            }
+
+            index += 1;
+        }
+    }
+
+    /*
+        Adds missing semi colon to the and of CQL command
+
+        The list of Keywords that start CQL commands is strored inside
+        CQL_KEYWORDS_LWC | LWC - lower_case
+    */
+    fn apply_semi_colon(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+
+        while index < lines.len() {
+            let line = lines[index].to_lowercase();
+
+            if index + 1 != lines.len()
+                && line.len() > 0
+                && !line.contains(&";")
+                && !line.contains(&"begin")
+            {
+                let lw = lines[index + 1].to_lowercase();
+                let split: Vec<&str> = lw.split(' ').collect();
+                if lines[index + 1].to_lowercase().len() == 0
+                    || CQL_KEYWORDS_LWC.contains(&split[0].to_string())
+                {
+                    lines[index].push(';');
+                }
+            }
+
+            if index == lines.len() - 1 && line.len() > 0 && !line.contains(&";") {
+                lines[index].push(';');
+            }
+
+            index += 1;
+        }
+    }
+
+    fn add_spacing_new_lines(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+
+        while index < lines.len() {
+            if index + 1 != lines.len()
+                && (lines[index].contains(&";") || lines[index].to_lowercase().contains(&"begin"))
+                && lines[index + 1].len() > 0
+            {
+                lines.insert(index + 1, "".to_string());
+            }
+
+            index += 1;
+        }
+    }
+
+    fn add_spacing_after_comma(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+
+        while index < lines.len() {
+            for idx in 0..lines[index].len() {
+                if idx + 1 != lines[index].len()
+                    && lines[index].chars().nth(idx).unwrap_or_else(|| '_') == ','
+                    && lines[index].chars().nth(idx + 1).unwrap_or_else(|| '_') != ' '
+                {
+                    lines[index].insert(idx + 1, ' ');
+                }
+            }
+
+            index += 1;
+        }
+    }
+
+    fn contains_styled_trigger_kw_create_table(&self, line: &str) -> bool {
+        line.contains(&"create") && line.contains(&"table") && line.contains(&"(")
+    }
+
+    fn contains_styled_trigger_kw_insert_into(&self, line: &str) -> bool {
+        line.contains(&"insert") && line.contains(&"(")
+    }
+
+    fn contains_styled_trigger_kw_values(&self, line: &str) -> bool {
+        line.contains(&"values") && line.contains(&"(")
+    }
+
+    /*
+        ISERT INTO ()
+        CREATE TABLE ()
+        VALUES ()
+
+        Converets
+
+        CREATE TABLE IF NOT EXISTS table_name ( name type, ...);
+
+        Into
+
+        CREATE TABLE IF NOT EXISTS table_name
+        (
+            name        type,
+            long_name   type,
+            sname       type
+
+            PRIMARY KEY ()
+        );
+
+        etc.
+    */
+    fn style_format(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+
+        let mut working_buf = Vec::<&str>::new();
+
+        while index < lines.len() {
+            if self.contains_styled_trigger_kw_create_table(&lines[index].to_lowercase()) {
+                let mut tmp_index = index;
+
+                while lines[tmp_index].contains(&";") {
+                    working_buf.push(&lines[tmp_index]);
+                    tmp_index += 1;
+                }
+                working_buf.push(&lines[tmp_index]);
+                index += 1;
+
+                let mut result_buf = Vec::<String>::new();
+
+                for idx in 0..working_buf.len() {
+                    let mut working_str = working_buf[idx].to_string();
+
+                    let mut working_index = 0;
+
+                    if let Some(bracket_start) = working_str.find('(') {
+                        let s = String::from_iter(working_str.chars().take(bracket_start));
+                        result_buf.push(s);
+                        result_buf.push("(".to_string());
+                        working_index = bracket_start + 1;
+
+                        let slice = working_str[bracket_start + 1..working_str.len()]
+                            .to_string()
+                            .to_lowercase();
+                        let slice_split: Vec<&str> = slice.split(' ').collect();
+
+                        let mut tmp_buf = "".to_string();
+                        for k in 0..slice_split.len() {
+                            if !tmp_buf.is_empty() && slice_split[k].contains(&",") {
+                                tmp_buf.push_str(slice_split[k]);
+                                result_buf.push(tmp_buf.clone());
+                                tmp_buf.clear();
+                            }
+
+                            if !slice_split[k].contains(&",") {
+                                tmp_buf.push_str(&format!("{} ", slice_split[k]));
+                            }
+                        }
+                    }
+                }
+
+                continue;
+            }
+            if self.contains_styled_trigger_kw_insert_into(&lines[index].to_lowercase()) {
+                index += 1;
+                continue;
+            }
+            if self.contains_styled_trigger_kw_values(&lines[index].to_lowercase()) {}
+
+            index += 1;
+        }
+    }
+
     async fn format_file(&self, lines: &Vec<&str>) -> Vec<TextEdit> {
         let mut edits = Vec::<TextEdit>::new();
         let mut working_vec: Vec<String> = lines.into_iter().map(|s| s.to_string()).collect();
 
-        /*
-            Correct formatting order
-
-            trim()
-            duplicates()
-            moves()
-        */
         for index in 0..working_vec.len() {
             working_vec[index] = working_vec[index].trim().to_string();
             self.fix_spacing(&mut working_vec[index]);
@@ -262,8 +603,24 @@ impl Backend {
         }
 
         self.fix_semi_colon(&mut working_vec);
+        self.fix_string_literals(&mut working_vec);
+        self.fix_new_lines(&mut working_vec);
+        self.remove_new_lines_from_code_block(&mut working_vec);
+        self.apply_semi_colon(&mut working_vec);
+        self.add_spacing_new_lines(&mut working_vec);
+        self.add_spacing_after_comma(&mut working_vec);
+
+        let idx = working_vec.len() - 1;
 
         for (index, line) in working_vec.into_iter().enumerate() {
+            let end_char_pos: u32;
+
+            if index >= lines.len() {
+                end_char_pos = line.len() as u32;
+            } else {
+                end_char_pos = lines[index].len() as u32;
+            }
+
             let text_edit = TextEdit {
                 range: Range {
                     start: Position {
@@ -272,12 +629,29 @@ impl Backend {
                     },
                     end: Position {
                         line: index as u32,
-                        character: lines[index].len() as u32,
+                        character: end_char_pos,
                     },
                 },
                 new_text: line,
             };
 
+            edits.push(text_edit);
+        }
+
+        if idx < lines.len() {
+            let text_edit = TextEdit {
+                range: Range {
+                    start: Position {
+                        line: idx as u32,
+                        character: lines[idx].len() as u32,
+                    },
+                    end: Position {
+                        line: lines.len() as u32 - 1,
+                        character: lines[lines.len() - 1].len() as u32,
+                    },
+                },
+                new_text: "".to_string(),
+            };
             edits.push(text_edit);
         }
 
@@ -594,17 +968,17 @@ impl Backend {
 
         if let Some(keyspace) = lates_keyspace {
             if keyspace == column.keyspace_name {
-                result_str = format!("{}, $0 FROM {};", column.column_name, column.table_name);
+                result_str = format!("{}, FROM {};", column.column_name, column.table_name);
             } else {
                 result_str = format!(
-                    "{}, $0 FROM {}.{};",
+                    "{}, FROM {}.{};",
                     column.column_name, column.keyspace_name, column.table_name
                 );
             }
             return result_str;
         }
         result_str = format!(
-            "{}, $0 FROM {}.{};",
+            "{}, FROM {}.{};",
             column.column_name, column.keyspace_name, column.table_name
         );
         result_str

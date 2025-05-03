@@ -4,6 +4,10 @@
 
 The 1nonly Open Source LSP for CQL (Cassandra Query Language) :?
 
+## Code completion
+
+## Document Formatting
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

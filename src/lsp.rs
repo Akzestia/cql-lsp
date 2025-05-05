@@ -1903,6 +1903,7 @@ impl LanguageServer for Backend {
         Ok(())
     }
 
+    // Fixed document not being updated on change
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
         let changes = &params.content_changes;
@@ -1912,6 +1913,15 @@ impl LanguageServer for Backend {
                 .write()
                 .await
                 .insert(uri.clone(), change.text.clone());
+
+            let mut current = self.current_document.write().await;
+            if let Some(ref mut document_lock) = *current {
+                let mut document = document_lock.write().await;
+                if document.uri == uri {
+                    document.change(uri.clone(), change.text.clone());
+                }
+            }
+
             info!("Document changed: {}", uri);
         }
     }

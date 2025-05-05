@@ -1970,53 +1970,46 @@ impl LanguageServer for Backend {
         };
 
         let in_string = Self::is_in_string_literal(line, position.character);
+        let ssh_keyspaces = self.should_suggest_keyspaces(line, &position);
+        let ssh_graph_types = self.should_suggest_graph_engine_types(line, &position);
+        let ssh_command_sequence = self.should_suggest_command_sequence(line, &position);
+        let ssh_keywords = self.should_suggest_keywords(line, &position).await;
+        let ssh_fields = self.should_suggest_fields(line, &position);
+        let ssh_from = self.should_suggest_from(line, &position);
+        let ssh_table_completions = self.should_suggest_table_completions(line, &position);
 
-        if self.should_suggest_keyspaces(line, position.character) {
+        if ssh_keyspaces {
             return if in_string {
                 self.handle_in_string_keyspace_completion(line, &position)
                     .await
             } else {
-                self.handle_out_of_string_keyspace_completion().await
+                self.handle_out_of_string_keyspace_completion(line, &position)
+                    .await
             };
         }
 
-        if self.should_suggest_fields(line, position.character)
-            && !self.should_suggest_keyspaces(line, position.character)
-            && !self.should_suggest_from(line, position.character)
-        {
-            return self.handle_fields_completion(line, &position).await;
-        }
-
-        if self.should_suggest_from(line, position.character)
-            && !self.should_suggest_fields(line, position.character)
-            && !self.should_suggest_keyspaces(line, position.character)
-        {
+        if ssh_from {
             return self.handle_from_completion();
         }
 
-        if self.should_ssuggest_table_completions(line, position.character)
-            && !self.should_suggest_fields(line, position.character)
-            && !self.should_suggest_from(line, position.character)
-        {
+        if ssh_fields {
+            return self.handle_fields_completion(line, &position).await;
+        }
+
+        if ssh_table_completions {
             return self.handle_table_completion(&position).await;
         }
 
-        if self.should_suggest_graph_engine_types(line, position.character) {
+        if ssh_graph_types {
             return if in_string {
                 self.handle_in_string_graph_engine_completion(line, &position)
                     .await
             } else {
-                self.handle_out_of_string_graph_engine_completion(line, &position)
-                    .await
+                self.handle_out_of_string_graph_engine_completion().await
             };
         }
 
-        if !in_string
-            && !self.should_suggest_fields(line, position.character)
-            && !self.should_suggest_keyspaces(line, position.character)
-            && !self.should_suggest_graph_engine_types(line, position.character)
-            && !self.should_suggest_from(line, position.character)
-        {
+        if ssh_keywords && !in_string {
             return self.handle_keywords_completion();
         }
 

@@ -1733,8 +1733,6 @@ impl Backend {
 
     async fn handle_out_of_string_graph_engine_completion(
         &self,
-        line: &str,
-        position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Offering graph engine completions");
 

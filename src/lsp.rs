@@ -1609,16 +1609,40 @@ impl Backend {
 
     async fn handle_out_of_string_keyspace_completion(
         &self,
+        line: &str,
+        position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Suggesting keyspace formats");
 
         let mut items = Vec::new();
         for keyspace in self.get_keyspaces().await {
+            let mut index = position.character as usize;
+            while index > 0 {
+                if line.chars().nth(index).unwrap_or_else(|| '_') == ' ' {
+                    index += 1;
+                    break;
+                }
+                index -= 1;
+            }
+
+            let text_edit = TextEdit {
+                range: Range {
+                    start: Position {
+                        line: position.line,
+                        character: index as u32,
+                    },
+                    end: Position {
+                        line: position.line,
+                        character: line.len() as u32,
+                    },
+                },
+                new_text: format!("\"{}\";", keyspace),
+            };
+
             items.push(CompletionItem {
                 label: keyspace.clone(),
                 kind: Some(CompletionItemKind::VALUE),
-                insert_text: Some(format!("\"{}\";", keyspace)),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                text_edit: Some(CompletionTextEdit::Edit(text_edit)),
                 ..Default::default()
             });
         }

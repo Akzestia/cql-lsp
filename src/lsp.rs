@@ -538,55 +538,17 @@ impl Backend {
 
         while index < lines.len() {
             if self.contains_styled_trigger_kw_create_table(&lines[index].to_lowercase()) {
-                let mut tmp_index = index;
-
-                while lines[tmp_index].contains(&";") {
-                    working_buf.push(&lines[tmp_index]);
-                    tmp_index += 1;
-                }
-                working_buf.push(&lines[tmp_index]);
                 index += 1;
-
-                let mut result_buf = Vec::<String>::new();
-
-                for idx in 0..working_buf.len() {
-                    let mut working_str = working_buf[idx].to_string();
-
-                    let mut working_index = 0;
-
-                    if let Some(bracket_start) = working_str.find('(') {
-                        let s = String::from_iter(working_str.chars().take(bracket_start));
-                        result_buf.push(s);
-                        result_buf.push("(".to_string());
-                        working_index = bracket_start + 1;
-
-                        let slice = working_str[bracket_start + 1..working_str.len()]
-                            .to_string()
-                            .to_lowercase();
-                        let slice_split: Vec<&str> = slice.split(' ').collect();
-
-                        let mut tmp_buf = "".to_string();
-                        for k in 0..slice_split.len() {
-                            if !tmp_buf.is_empty() && slice_split[k].contains(&",") {
-                                tmp_buf.push_str(slice_split[k]);
-                                result_buf.push(tmp_buf.clone());
-                                tmp_buf.clear();
-                            }
-
-                            if !slice_split[k].contains(&",") {
-                                tmp_buf.push_str(&format!("{} ", slice_split[k]));
-                            }
-                        }
-                    }
-                }
-
                 continue;
             }
             if self.contains_styled_trigger_kw_insert_into(&lines[index].to_lowercase()) {
                 index += 1;
                 continue;
             }
-            if self.contains_styled_trigger_kw_values(&lines[index].to_lowercase()) {}
+            if self.contains_styled_trigger_kw_values(&lines[index].to_lowercase()) {
+                index += 1;
+                continue;
+            }
 
             index += 1;
         }

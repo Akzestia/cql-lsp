@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::{debug, info, warn};
 
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};

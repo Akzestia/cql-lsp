@@ -15,6 +15,10 @@ use tower_lsp::lsp_types::*;
     |USE| ...
 
     |INSERT| ... INTO ...
+
+    Note!
+
+    CQL keywords ARE NOT affected by styled formatting!
 */
 pub static CQL_KEYWORDS_LWC: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
@@ -55,6 +59,23 @@ pub static CQL_KEYWORDS_LWC: Lazy<Vec<String>> = Lazy::new(|| {
     ]
 });
 
+/*
+    Lower case CQL types
+
+    Separate list of CQL tyes used mostly for
+    formatting logic e.g
+
+    if CQL_TYPES_LWC.contains(&split[index]) {
+        ...
+    }
+
+    Where &split is a lower case split of the line &&
+    &splitp[index] is a candidate for a type
+
+    Note!
+
+    CQL types ARE affected by styled formatting!
+*/
 pub static CQL_TYPES_LWC: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
         "ascii".to_string(),
@@ -82,6 +103,157 @@ pub static CQL_TYPES_LWC: Lazy<Vec<String>> = Lazy::new(|| {
         "uuid".to_string(),
         "varchar".to_string(),
         "varint".to_string(),
+    ]
+});
+
+/*
+    List of keywords represented as String
+*/
+pub static KEYWORDS_STRINGS_LWC: Lazy<Vec<String>> = Lazy::new(|| {
+    vec![
+        "use".to_string(),
+        "alter".to_string(),
+        "create".to_string(),
+        "keyspace".to_string(),
+        "table".to_string(),
+        "with".to_string(),
+        "where".to_string(),
+        "if".to_string(),
+        "and".to_string(),
+        "set".to_string(),
+        "in".to_string(),
+        "to".to_string(),
+        "from".to_string(),
+        "using".to_string(),
+        "timestamp".to_string(),
+        "ttl".to_string(),
+        "exists".to_string(),
+        "not".to_string(),
+        "type".to_string(),
+        "view".to_string(),
+        "materialized".to_string(),
+        "replication".to_string(),
+        "durable_writes".to_string(),
+        "batch".to_string(),
+        "apply".to_string(),
+        "begin".to_string(),
+        "unlogged".to_string(),
+        "logged".to_string(),
+        "counter".to_string(),
+        "truncate".to_string(),
+        "insert".to_string(),
+        "into".to_string(),
+        "values".to_string(),
+        "update".to_string(),
+        "delete".to_string(),
+        "role".to_string(),
+        "password".to_string(),
+        "user".to_string(),
+        "superuser".to_string(),
+        "nosuperuser".to_string(),
+        "add".to_string(),
+        "drop".to_string(),
+        "rename".to_string(),
+        "compact".to_string(),
+        "storage".to_string(),
+        "contains".to_string(),
+        "key".to_string(),
+        "login".to_string(),
+        "options".to_string(),
+        "or".to_string(),
+        "replace".to_string(),
+        "sfunc".to_string(),
+        "stype".to_string(),
+        "finalfunc".to_string(),
+        "initcond".to_string(),
+        "language".to_string(),
+        "input".to_string(),
+        "on".to_string(),
+        "function".to_string(),
+        "called".to_string(),
+        "returns".to_string(),
+        "filtering".to_string(),
+        "distinct".to_string(),
+        "as".to_string(),
+        "keys".to_string(),
+        "group".to_string(),
+        "by".to_string(),
+        "json".to_string(),
+        "null".to_string(),
+        "custom".to_string(),
+        "aggregate".to_string(),
+        "all".to_string(),
+        "allow".to_string(),
+        "asc".to_string(),
+        "authorize".to_string(),
+        "clustering".to_string(),
+        "desc".to_string(),
+        "describe".to_string(),
+        "entries".to_string(),
+        "full".to_string(),
+        "grant".to_string(),
+        "index".to_string(),
+        "keyspaces".to_string(),
+        "limit".to_string(),
+        "modify".to_string(),
+        "norecursive".to_string(),
+        "of".to_string(),
+        "order".to_string(),
+        "partition".to_string(),
+        "per".to_string(),
+        "permissions".to_string(),
+        "primary".to_string(),
+        "revoke".to_string(),
+        "select".to_string(),
+        "users".to_string(),
+        "commit".to_string(),
+        "search".to_string(),
+        "roles".to_string(),
+        "deterministic".to_string(),
+        "monotonic".to_string(),
+        "java".to_string(),
+        "javascript".to_string(),
+        "is".to_string(),
+        "hashed".to_string(),
+        "access".to_string(),
+        "datacenters".to_string(),
+        "cidrs".to_string(),
+        "columns".to_string(),
+        "profiles".to_string(),
+        "config".to_string(),
+        "rows".to_string(),
+        "functions".to_string(),
+        "mbeans".to_string(),
+        "mbean".to_string(),
+        "pattern".to_string(),
+        "execute".to_string(),
+        "proxy".to_string(),
+        "id".to_string(),
+        "like".to_string(),
+        "ann".to_string(),
+        "offset".to_string(),
+        "list".to_string(),
+        "max".to_string(),
+        "min".to_string(),
+        "sum".to_string(),
+        "avg".to_string(),
+        "token".to_string(),
+        "writetime".to_string(),
+        "count".to_string(),
+        "infinity".to_string(),
+        "nan".to_string(),
+        "static".to_string(),
+        "any".to_string(),
+        "having".to_string(),
+        "consistency".to_string(),
+        "level".to_string(),
+        "one".to_string(),
+        "two".to_string(),
+        "three".to_string(),
+        "quorum".to_string(),
+        "local_one".to_string(),
+        "local_quorum".to_string(),
+        "each_quorum".to_string(),
     ]
 });
 

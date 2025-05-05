@@ -1100,17 +1100,128 @@ impl Backend {
         line: &str,
         position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let mut tbl_name = "".to_string();
+
+        let lw_line = line.to_lowercase();
+
+        if lw_line.contains(&"from") {
+            let trimmed = lw_line.trim_end();
+            let split: Vec<&str> = trimmed.split(' ').collect();
+            if !split[split.len() - 1].contains(&"from") && split[split.len() - 1].len() > 1 {
+                let ksp_tbl = split[split.len() - 1].replace(";", "");
+
+                if ksp_tbl.contains(&".") {
+                    let keyspace_table: Vec<&str> = ksp_tbl.split('.').collect();
+                    if keyspace_table.len() == 2 {
+                        let ksp = keyspace_table[0];
+                        let tbl = keyspace_table[1];
+
+                        let mut items: Vec<Column> = Vec::new();
+
+                        let result =
+                            cqlsh::query_hard_scoped_fields(&self.config, &ksp, &tbl).await;
+                        match result {
+                            Ok(mut r) => {
+                                items.append(&mut r);
+                            }
+                            Err(_) => {}
+                        }
+
+                        let mut result: Vec<CompletionItem> = Vec::new();
+
+                        if self.should_field_be_edit(line) {
+                            for item in items {
+                                if lw_line.contains(&item.column_name.to_lowercase()) {
+                                    continue;
+                                }
+
+                                let text_edit_str =
+                                    self.column_to_text_edit(line, &item, Some(&ksp));
+
+                                info!(
+                                    "TEXT: {} | {}-{}",
+                                    text_edit_str,
+                                    self.get_start_offset(line, position),
+                                    text_edit_str.len() as u32
+                                );
+
+                                let text_edit = TextEdit {
+                                    range: Range {
+                                        start: Position {
+                                            line: position.line,
+                                            character: self.get_start_offset(line, position) + 1,
+                                        },
+                                        end: Position {
+                                            line: position.line,
+                                            // Insane wierd shit :D
+                                            character: line.len() as u32,
+                                        },
+                                    },
+                                    new_text: text_edit_str,
+                                };
+
+                                result.push(CompletionItem {
+                                    label: format!(
+                                        "{} | {}.{}",
+                                        item.column_name, item.keyspace_name, item.table_name,
+                                    ),
+                                    kind: Some(CompletionItemKind::SNIPPET),
+                                    text_edit: Some(CompletionTextEdit::Edit(text_edit)),
+                                    ..Default::default()
+                                });
+                            }
+                        } else {
+                            for item in items {
+                                if lw_line.contains(&item.column_name.to_lowercase()) {
+                                    continue;
+                                }
+
+                                result.push(CompletionItem {
+                                    label: format!(
+                                        "{} | {}.{}",
+                                        item.column_name, item.keyspace_name, item.table_name,
+                                    ),
+                                    kind: Some(CompletionItemKind::FIELD),
+                                    insert_text: Some(format!("{}", item.column_name)),
+                                    ..Default::default()
+                                });
+                            }
+                        }
+                        return Ok(Some(CompletionResponse::Array(result)));
+                    }
+                } else {
+                    tbl_name = ksp_tbl;
+                }
+            }
+        }
+
         if let Some(keyspace) = self.latest_keyspace(position).await {
             info!("Latest: [{keyspace}]");
 
-            let items = cqlsh::query_keyspace_scoped_fields(&self.config, &keyspace)
-                .await
-                .unwrap_or_else(|e| vec![]);
+            let mut items: Vec<Column> = Vec::new();
+
+            if tbl_name != "" {
+                let result =
+                    cqlsh::query_hard_scoped_fields(&self.config, &keyspace, &tbl_name).await;
+                match result {
+                    Ok(mut r) => {
+                        items.append(&mut r);
+                    }
+                    Err(_) => {}
+                }
+            } else {
+                items = cqlsh::query_keyspace_scoped_fields(&self.config, &keyspace)
+                    .await
+                    .unwrap_or_else(|_| vec![]);
+            }
 
             let mut result: Vec<CompletionItem> = Vec::new();
 
             if self.should_field_be_edit(line) {
                 for item in items {
+                    if lw_line.contains(&item.column_name.to_lowercase()) {
+                        continue;
+                    }
                     let text_edit_str = self.column_to_text_edit(line, &item, Some(&keyspace));
 
                     info!(
@@ -1147,6 +1258,10 @@ impl Backend {
                 }
             } else {
                 for item in items {
+                    if lw_line.contains(&item.column_name.to_lowercase()) {
+                        continue;
+                    }
+
                     result.push(CompletionItem {
                         label: format!(
                             "{} | {}.{}",
@@ -1184,6 +1299,9 @@ impl Backend {
 
         if self.should_field_be_edit(line) {
             for item in items {
+                if lw_line.contains(&item.column_name.to_lowercase()) {
+                    continue;
+                }
                 let text_edit_str = self.column_to_text_edit(line, &item, None);
 
                 let text_edit = TextEdit {
@@ -1212,6 +1330,9 @@ impl Backend {
             }
         } else {
             for item in items {
+                if lw_line.contains(&item.column_name.to_lowercase()) {
+                    continue;
+                }
                 result.push(CompletionItem {
                     label: format!(
                         "{} | {}.{}",

@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::{debug, info, warn};
 
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
@@ -538,55 +538,17 @@ impl Backend {
 
         while index < lines.len() {
             if self.contains_styled_trigger_kw_create_table(&lines[index].to_lowercase()) {
-                let mut tmp_index = index;
-
-                while lines[tmp_index].contains(&";") {
-                    working_buf.push(&lines[tmp_index]);
-                    tmp_index += 1;
-                }
-                working_buf.push(&lines[tmp_index]);
                 index += 1;
-
-                let mut result_buf = Vec::<String>::new();
-
-                for idx in 0..working_buf.len() {
-                    let mut working_str = working_buf[idx].to_string();
-
-                    let mut working_index = 0;
-
-                    if let Some(bracket_start) = working_str.find('(') {
-                        let s = String::from_iter(working_str.chars().take(bracket_start));
-                        result_buf.push(s);
-                        result_buf.push("(".to_string());
-                        working_index = bracket_start + 1;
-
-                        let slice = working_str[bracket_start + 1..working_str.len()]
-                            .to_string()
-                            .to_lowercase();
-                        let slice_split: Vec<&str> = slice.split(' ').collect();
-
-                        let mut tmp_buf = "".to_string();
-                        for k in 0..slice_split.len() {
-                            if !tmp_buf.is_empty() && slice_split[k].contains(&",") {
-                                tmp_buf.push_str(slice_split[k]);
-                                result_buf.push(tmp_buf.clone());
-                                tmp_buf.clear();
-                            }
-
-                            if !slice_split[k].contains(&",") {
-                                tmp_buf.push_str(&format!("{} ", slice_split[k]));
-                            }
-                        }
-                    }
-                }
-
                 continue;
             }
             if self.contains_styled_trigger_kw_insert_into(&lines[index].to_lowercase()) {
                 index += 1;
                 continue;
             }
-            if self.contains_styled_trigger_kw_values(&lines[index].to_lowercase()) {}
+            if self.contains_styled_trigger_kw_values(&lines[index].to_lowercase()) {
+                index += 1;
+                continue;
+            }
 
             index += 1;
         }
@@ -687,6 +649,7 @@ impl Backend {
         true
     }
 
+    // Works
     async fn get_keyspaces(&self) -> Vec<String> {
         let items = cqlsh::query_keyspaces(&self.config).await;
 
@@ -698,11 +661,38 @@ impl Backend {
         }
     }
 
-    fn should_suggest_keyspaces(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_keyspaces(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
+
+        if let Some(semi_colon_pos) = line.find(&";") {
+            if position.character > semi_colon_pos as u32 {
+                return false;
+            }
+        }
+
+        let mut index: usize = 0;
+        let mut met_bracket = false;
+
+        while index < position.character as usize {
+            if met_bracket
+                && (line.chars().nth(index).unwrap_or_else(|| '_') == '"'
+                    || line.chars().nth(index).unwrap_or_else(|| '_') == '\'')
+            {
+                return false;
+            }
+
+            if !met_bracket
+                && (line.chars().nth(index).unwrap_or_else(|| '_') == '"'
+                    || line.chars().nth(index).unwrap_or_else(|| '_') == '\'')
+            {
+                met_bracket = true;
+            }
+            index += 1;
+        }
 
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let split: Vec<&str> = trimmed_prefix.split(' ').collect();
@@ -716,7 +706,7 @@ impl Backend {
         }
 
         for c in line.chars().enumerate() {
-            if c.1 == ';' && c.0 < position as usize {
+            if c.1 == ';' && c.0 < position.character as usize {
                 return false;
             }
         }
@@ -728,8 +718,9 @@ impl Backend {
         vec!["Core".to_string(), "Classic".to_string()]
     }
 
-    fn should_suggest_graph_engine_types(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_graph_engine_types(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
@@ -871,8 +862,128 @@ impl Backend {
         Ok(Some(CompletionResponse::Array(items)))
     }
 
-    fn should_suggest_command_sequence(&self, line: &str, position: u32) -> bool {
+    fn should_suggest_command_sequence(&self, line: &str, position: &Position) -> bool {
         false
+    }
+
+    // Works
+    async fn should_suggest_keywords(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        if let Some(semi_colon_pos) = line.find(&";") {
+            if position.character > semi_colon_pos as u32 {
+                return false;
+            }
+        }
+
+        if line.to_lowercase().contains(&"use") {
+            return false;
+        }
+
+        if line.to_lowercase().contains(&"select") && line.to_lowercase().contains(&"from") {
+            if let Some(from_pos) = line.find(&";") {
+                if position.character < (from_pos + 1) as u32 {
+                    return false;
+                }
+            }
+        }
+
+        let trimmed_prefix = prefix.trim_end().to_lowercase();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        if split.len() > 0 && split[split.len() - 1].contains(&";") {
+            return false;
+        }
+
+        if split.len() >= 2
+            && (split[split.len() - 1].contains(&"from")
+                || split[split.len() - 2].contains(&"from"))
+        {
+            return false;
+        }
+
+        if line.contains(&"(") && !line.contains(&")") {
+            return false;
+        }
+
+        if line.contains(&"(") && line.contains(&")") {
+            let posx = line.rfind(&")").unwrap();
+
+            if posx >= position.character as usize {
+                return false;
+            }
+        }
+
+        let current = self.current_document.read().await;
+
+        if let Some(ref document_lock) = *current {
+            let document = document_lock.read().await;
+            let splitx: Vec<&str> = document.text.split('\n').collect();
+
+            let mut index_up = position.line as usize;
+
+            info!("\n\nDoc len: {}\nIndex Up: {}\n\n", splitx.len(), index_up);
+
+            while index_up > 0 && index_up < splitx.len() {
+                if (!splitx[index_up].contains(&"(")
+                    && KEYWORDS_STRINGS_LWC.contains(&splitx[index_up].to_string()))
+                    || splitx[index_up].contains(&";")
+                {
+                    break;
+                }
+
+                info!("SPLITX: {}", splitx[index_up]);
+                if splitx[index_up].contains(&"(") {
+                    return false;
+                }
+
+                index_up -= 1;
+            }
+
+            if index_up < splitx.len() && splitx[index_up].contains(&"(") {
+                return false;
+            }
+        }
+
+        /*
+            Todo
+
+            Add more complex logic to prevent keywords being suggested inside expressions
+
+            AND age = 23
+
+            AND something * something >= something
+
+            etc.
+        */
+        if split.len() >= 2
+            && (split[split.len() - 1].contains(&"and") || split[split.len() - 2].contains(&"and"))
+        {
+            return false;
+        }
+
+        /*
+            Todo
+
+            Add more complex logic to prevent keywords being suggested inside expressions
+
+            WHERE age = 23
+
+            WHERE something * something >= something
+
+            etc.
+        */
+        if split.len() >= 2
+            && (split[split.len() - 1].contains(&"where")
+                || split[split.len() - 2].contains(&"where"))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     #[warn(unused_mut)]
@@ -989,17 +1100,128 @@ impl Backend {
         line: &str,
         position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let mut tbl_name = "".to_string();
+
+        let lw_line = line.to_lowercase();
+
+        if lw_line.contains(&"from") {
+            let trimmed = lw_line.trim_end();
+            let split: Vec<&str> = trimmed.split(' ').collect();
+            if !split[split.len() - 1].contains(&"from") && split[split.len() - 1].len() > 1 {
+                let ksp_tbl = split[split.len() - 1].replace(";", "");
+
+                if ksp_tbl.contains(&".") {
+                    let keyspace_table: Vec<&str> = ksp_tbl.split('.').collect();
+                    if keyspace_table.len() == 2 {
+                        let ksp = keyspace_table[0];
+                        let tbl = keyspace_table[1];
+
+                        let mut items: Vec<Column> = Vec::new();
+
+                        let result =
+                            cqlsh::query_hard_scoped_fields(&self.config, &ksp, &tbl).await;
+                        match result {
+                            Ok(mut r) => {
+                                items.append(&mut r);
+                            }
+                            Err(_) => {}
+                        }
+
+                        let mut result: Vec<CompletionItem> = Vec::new();
+
+                        if self.should_field_be_edit(line) {
+                            for item in items {
+                                if lw_line.contains(&item.column_name.to_lowercase()) {
+                                    continue;
+                                }
+
+                                let text_edit_str =
+                                    self.column_to_text_edit(line, &item, Some(&ksp));
+
+                                info!(
+                                    "TEXT: {} | {}-{}",
+                                    text_edit_str,
+                                    self.get_start_offset(line, position),
+                                    text_edit_str.len() as u32
+                                );
+
+                                let text_edit = TextEdit {
+                                    range: Range {
+                                        start: Position {
+                                            line: position.line,
+                                            character: self.get_start_offset(line, position) + 1,
+                                        },
+                                        end: Position {
+                                            line: position.line,
+                                            // Insane wierd shit :D
+                                            character: line.len() as u32,
+                                        },
+                                    },
+                                    new_text: text_edit_str,
+                                };
+
+                                result.push(CompletionItem {
+                                    label: format!(
+                                        "{} | {}.{}",
+                                        item.column_name, item.keyspace_name, item.table_name,
+                                    ),
+                                    kind: Some(CompletionItemKind::SNIPPET),
+                                    text_edit: Some(CompletionTextEdit::Edit(text_edit)),
+                                    ..Default::default()
+                                });
+                            }
+                        } else {
+                            for item in items {
+                                if lw_line.contains(&item.column_name.to_lowercase()) {
+                                    continue;
+                                }
+
+                                result.push(CompletionItem {
+                                    label: format!(
+                                        "{} | {}.{}",
+                                        item.column_name, item.keyspace_name, item.table_name,
+                                    ),
+                                    kind: Some(CompletionItemKind::FIELD),
+                                    insert_text: Some(format!("{}", item.column_name)),
+                                    ..Default::default()
+                                });
+                            }
+                        }
+                        return Ok(Some(CompletionResponse::Array(result)));
+                    }
+                } else {
+                    tbl_name = ksp_tbl;
+                }
+            }
+        }
+
         if let Some(keyspace) = self.latest_keyspace(position).await {
             info!("Latest: [{keyspace}]");
 
-            let items = cqlsh::query_keyspace_scoped_fields(&self.config, &keyspace)
-                .await
-                .unwrap_or_else(|e| vec![]);
+            let mut items: Vec<Column> = Vec::new();
+
+            if tbl_name != "" {
+                let result =
+                    cqlsh::query_hard_scoped_fields(&self.config, &keyspace, &tbl_name).await;
+                match result {
+                    Ok(mut r) => {
+                        items.append(&mut r);
+                    }
+                    Err(_) => {}
+                }
+            } else {
+                items = cqlsh::query_keyspace_scoped_fields(&self.config, &keyspace)
+                    .await
+                    .unwrap_or_else(|_| vec![]);
+            }
 
             let mut result: Vec<CompletionItem> = Vec::new();
 
             if self.should_field_be_edit(line) {
                 for item in items {
+                    if lw_line.contains(&item.column_name.to_lowercase()) {
+                        continue;
+                    }
                     let text_edit_str = self.column_to_text_edit(line, &item, Some(&keyspace));
 
                     info!(
@@ -1036,6 +1258,10 @@ impl Backend {
                 }
             } else {
                 for item in items {
+                    if lw_line.contains(&item.column_name.to_lowercase()) {
+                        continue;
+                    }
+
                     result.push(CompletionItem {
                         label: format!(
                             "{} | {}.{}",
@@ -1073,6 +1299,9 @@ impl Backend {
 
         if self.should_field_be_edit(line) {
             for item in items {
+                if lw_line.contains(&item.column_name.to_lowercase()) {
+                    continue;
+                }
                 let text_edit_str = self.column_to_text_edit(line, &item, None);
 
                 let text_edit = TextEdit {
@@ -1101,6 +1330,9 @@ impl Backend {
             }
         } else {
             for item in items {
+                if lw_line.contains(&item.column_name.to_lowercase()) {
+                    continue;
+                }
                 result.push(CompletionItem {
                     label: format!(
                         "{} | {}.{}",
@@ -1116,8 +1348,9 @@ impl Backend {
         Ok(Some(CompletionResponse::Array(result)))
     }
 
-    fn should_suggest_fields(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_fields(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
@@ -1137,15 +1370,19 @@ impl Backend {
             return false;
         }
 
-        if trimmed_prefix.len() != prefix.len() && !splitted[splitted.len() - 1].contains(&",") {
+        if splitted.len() > 0
+            && trimmed_prefix.len() != prefix.len()
+            && !splitted[splitted.len() - 1].contains(&",")
+        {
             return false;
         }
 
         true
     }
 
-    fn should_suggest_from(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_from(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
@@ -1153,22 +1390,35 @@ impl Backend {
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        if !splitted.contains(&"select") || splitted.contains(&"from") {
+        if !splitted.contains(&"select")
+            || splitted.contains(&"from")
+            || line.to_lowercase().contains(&"from")
+        {
             return false;
         }
 
-        if splitted.len() <= 2 && splitted.contains(&"select") {
-            return false;
-        }
-
-        if splitted.contains(&"select")
-            && !splitted[splitted.len() - 1].contains(&",")
+        if splitted.len() == 1
+            && splitted.contains(&"select")
             && trimmed_prefix.len() != prefix.len()
         {
-            return true;
+            return false;
         }
 
-        false
+        if splitted.len() == 2
+            && splitted.contains(&"select")
+            && trimmed_prefix.len() == prefix.len()
+        {
+            return false;
+        }
+
+        if splitted.len() >= 3
+            && splitted.contains(&"select")
+            && splitted[splitted.len() - 1].contains(&",")
+        {
+            return false;
+        }
+
+        true
     }
 
     async fn get_table_completions(
@@ -1232,25 +1482,51 @@ impl Backend {
         return Ok(Some(CompletionResponse::Array(items)));
     }
 
-    fn should_ssuggest_table_completions(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_table_completions(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
-
+        if let Some(semi_colon_pos) = line.find(&";") {
+            if position.character > semi_colon_pos as u32 {
+                return false;
+            }
+        }
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        if splitted.len() >= 2
+            && (splitted[splitted.len() - 2].contains(&"insert")
+                || splitted[splitted.len() - 1].contains(&"into"))
+        {
+            return true;
+        }
+
+        if splitted.len() >= 3
+            && ((splitted[splitted.len() - 2].contains(&"insert")
+                || splitted[splitted.len() - 1].contains(&"into"))
+                || (splitted[splitted.len() - 3].contains(&"insert")
+                    || splitted[splitted.len() - 2].contains(&"into")))
+        {
+            return true;
+        }
 
         if !splitted.contains(&"select") && !splitted.contains(&"from") {
             return false;
         }
-
-        if !(splitted[splitted.len() - 2].contains(&"from")
-            || splitted[splitted.len() - 1].contains(&"from"))
+        if splitted.len() >= 2
+            && !splitted[splitted.len() - 2].contains(&"from")
+            && !splitted[splitted.len() - 1].contains(&"from")
         {
             return false;
         }
-
+        if splitted.len() >= 2
+            && splitted[splitted.len() - 2].contains(&"from")
+            && trimmed_prefix.len() != prefix.len()
+        {
+            return false;
+        }
         true
     }
 
@@ -1333,16 +1609,40 @@ impl Backend {
 
     async fn handle_out_of_string_keyspace_completion(
         &self,
+        line: &str,
+        position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Suggesting keyspace formats");
 
         let mut items = Vec::new();
         for keyspace in self.get_keyspaces().await {
+            let mut index = position.character as usize;
+            while index > 0 {
+                if line.chars().nth(index).unwrap_or_else(|| '_') == ' ' {
+                    index += 1;
+                    break;
+                }
+                index -= 1;
+            }
+
+            let text_edit = TextEdit {
+                range: Range {
+                    start: Position {
+                        line: position.line,
+                        character: index as u32,
+                    },
+                    end: Position {
+                        line: position.line,
+                        character: line.len() as u32,
+                    },
+                },
+                new_text: format!("\"{}\";", keyspace),
+            };
+
             items.push(CompletionItem {
                 label: keyspace.clone(),
                 kind: Some(CompletionItemKind::VALUE),
-                insert_text: Some(format!("\"{}\";", keyspace)),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                text_edit: Some(CompletionTextEdit::Edit(text_edit)),
                 ..Default::default()
             });
         }
@@ -1433,8 +1733,6 @@ impl Backend {
 
     async fn handle_out_of_string_graph_engine_completion(
         &self,
-        line: &str,
-        position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         info!("Offering graph engine completions");
 
@@ -1605,6 +1903,7 @@ impl LanguageServer for Backend {
         Ok(())
     }
 
+    // Fixed document not being updated on change
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
         let changes = &params.content_changes;
@@ -1614,6 +1913,15 @@ impl LanguageServer for Backend {
                 .write()
                 .await
                 .insert(uri.clone(), change.text.clone());
+
+            let mut current = self.current_document.write().await;
+            if let Some(ref mut document_lock) = *current {
+                let mut document = document_lock.write().await;
+                if document.uri == uri {
+                    document.change(uri.clone(), change.text.clone());
+                }
+            }
+
             info!("Document changed: {}", uri);
         }
     }
@@ -1662,53 +1970,46 @@ impl LanguageServer for Backend {
         };
 
         let in_string = Self::is_in_string_literal(line, position.character);
+        let ssh_keyspaces = self.should_suggest_keyspaces(line, &position);
+        let ssh_graph_types = self.should_suggest_graph_engine_types(line, &position);
+        let ssh_command_sequence = self.should_suggest_command_sequence(line, &position);
+        let ssh_keywords = self.should_suggest_keywords(line, &position).await;
+        let ssh_fields = self.should_suggest_fields(line, &position);
+        let ssh_from = self.should_suggest_from(line, &position);
+        let ssh_table_completions = self.should_suggest_table_completions(line, &position);
 
-        if self.should_suggest_keyspaces(line, position.character) {
+        if ssh_keyspaces {
             return if in_string {
                 self.handle_in_string_keyspace_completion(line, &position)
                     .await
             } else {
-                self.handle_out_of_string_keyspace_completion().await
+                self.handle_out_of_string_keyspace_completion(line, &position)
+                    .await
             };
         }
 
-        if self.should_suggest_fields(line, position.character)
-            && !self.should_suggest_keyspaces(line, position.character)
-            && !self.should_suggest_from(line, position.character)
-        {
-            return self.handle_fields_completion(line, &position).await;
-        }
-
-        if self.should_suggest_from(line, position.character)
-            && !self.should_suggest_fields(line, position.character)
-            && !self.should_suggest_keyspaces(line, position.character)
-        {
+        if ssh_from {
             return self.handle_from_completion();
         }
 
-        if self.should_ssuggest_table_completions(line, position.character)
-            && !self.should_suggest_fields(line, position.character)
-            && !self.should_suggest_from(line, position.character)
-        {
+        if ssh_fields {
+            return self.handle_fields_completion(line, &position).await;
+        }
+
+        if ssh_table_completions {
             return self.handle_table_completion(&position).await;
         }
 
-        if self.should_suggest_graph_engine_types(line, position.character) {
+        if ssh_graph_types {
             return if in_string {
                 self.handle_in_string_graph_engine_completion(line, &position)
                     .await
             } else {
-                self.handle_out_of_string_graph_engine_completion(line, &position)
-                    .await
+                self.handle_out_of_string_graph_engine_completion().await
             };
         }
 
-        if !in_string
-            && !self.should_suggest_fields(line, position.character)
-            && !self.should_suggest_keyspaces(line, position.character)
-            && !self.should_suggest_graph_engine_types(line, position.character)
-            && !self.should_suggest_from(line, position.character)
-        {
+        if ssh_keywords && !in_string {
             return self.handle_keywords_completion();
         }
 

@@ -261,3 +261,43 @@ pub async fn query_keyspace_scoped_fields(
 
     Ok(items)
 }
+
+pub async fn query_hard_scoped_fields(
+    config: &CqlSettings,
+    keyspace_name: &str,
+    table_name: &str,
+) -> Result<Vec<Column>, Box<dyn std::error::Error>> {
+    let session = SessionBuilder::new()
+        .known_node(&config.url)
+        .user(&config.user, &config.pswd)
+        .connection_timeout(Duration::from_secs(3))
+        .build()
+        .await?;
+
+    let query = format!(
+        "SELECT column_name, type  FROM system_schema.columns WHERE keyspace_name = '{}' AND table_name = '{}';",
+        keyspace_name, table_name
+    );
+
+    let result_rows = session
+        .query_unpaged(query, &[])
+        .await?
+        .into_rows_result()?;
+
+    let mut items = Vec::<Column>::new();
+
+    for row in result_rows.rows::<(String, String)>()? {
+        let row_result = row?;
+        let column_name = row_result.0;
+        let column_type = row_result.1;
+
+        items.push(Column {
+            keyspace_name: keyspace_name.to_string(),
+            table_name: table_name.to_string(),
+            column_name,
+            column_type,
+        });
+    }
+
+    Ok(items)
+}

@@ -649,6 +649,7 @@ impl Backend {
         true
     }
 
+    // Works
     async fn get_keyspaces(&self) -> Vec<String> {
         let items = cqlsh::query_keyspaces(&self.config).await;
 
@@ -660,11 +661,38 @@ impl Backend {
         }
     }
 
-    fn should_suggest_keyspaces(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_keyspaces(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
+
+        if let Some(semi_colon_pos) = line.find(&";") {
+            if position.character > semi_colon_pos as u32 {
+                return false;
+            }
+        }
+
+        let mut index: usize = 0;
+        let mut met_bracket = false;
+
+        while index < position.character as usize {
+            if met_bracket
+                && (line.chars().nth(index).unwrap_or_else(|| '_') == '"'
+                    || line.chars().nth(index).unwrap_or_else(|| '_') == '\'')
+            {
+                return false;
+            }
+
+            if !met_bracket
+                && (line.chars().nth(index).unwrap_or_else(|| '_') == '"'
+                    || line.chars().nth(index).unwrap_or_else(|| '_') == '\'')
+            {
+                met_bracket = true;
+            }
+            index += 1;
+        }
 
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let split: Vec<&str> = trimmed_prefix.split(' ').collect();
@@ -678,7 +706,7 @@ impl Backend {
         }
 
         for c in line.chars().enumerate() {
-            if c.1 == ';' && c.0 < position as usize {
+            if c.1 == ';' && c.0 < position.character as usize {
                 return false;
             }
         }
@@ -690,8 +718,9 @@ impl Backend {
         vec!["Core".to_string(), "Classic".to_string()]
     }
 
-    fn should_suggest_graph_engine_types(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_graph_engine_types(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
@@ -833,8 +862,128 @@ impl Backend {
         Ok(Some(CompletionResponse::Array(items)))
     }
 
-    fn should_suggest_command_sequence(&self, line: &str, position: u32) -> bool {
+    fn should_suggest_command_sequence(&self, line: &str, position: &Position) -> bool {
         false
+    }
+
+    // Works
+    async fn should_suggest_keywords(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        if let Some(semi_colon_pos) = line.find(&";") {
+            if position.character > semi_colon_pos as u32 {
+                return false;
+            }
+        }
+
+        if line.to_lowercase().contains(&"use") {
+            return false;
+        }
+
+        if line.to_lowercase().contains(&"select") && line.to_lowercase().contains(&"from") {
+            if let Some(from_pos) = line.find(&";") {
+                if position.character < (from_pos + 1) as u32 {
+                    return false;
+                }
+            }
+        }
+
+        let trimmed_prefix = prefix.trim_end().to_lowercase();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        if split.len() > 0 && split[split.len() - 1].contains(&";") {
+            return false;
+        }
+
+        if split.len() >= 2
+            && (split[split.len() - 1].contains(&"from")
+                || split[split.len() - 2].contains(&"from"))
+        {
+            return false;
+        }
+
+        if line.contains(&"(") && !line.contains(&")") {
+            return false;
+        }
+
+        if line.contains(&"(") && line.contains(&")") {
+            let posx = line.rfind(&")").unwrap();
+
+            if posx >= position.character as usize {
+                return false;
+            }
+        }
+
+        let current = self.current_document.read().await;
+
+        if let Some(ref document_lock) = *current {
+            let document = document_lock.read().await;
+            let splitx: Vec<&str> = document.text.split('\n').collect();
+
+            let mut index_up = position.line as usize;
+
+            info!("\n\nDoc len: {}\nIndex Up: {}\n\n", splitx.len(), index_up);
+
+            while index_up > 0 && index_up < splitx.len() {
+                if (!splitx[index_up].contains(&"(")
+                    && KEYWORDS_STRINGS_LWC.contains(&splitx[index_up].to_string()))
+                    || splitx[index_up].contains(&";")
+                {
+                    break;
+                }
+
+                info!("SPLITX: {}", splitx[index_up]);
+                if splitx[index_up].contains(&"(") {
+                    return false;
+                }
+
+                index_up -= 1;
+            }
+
+            if index_up < splitx.len() && splitx[index_up].contains(&"(") {
+                return false;
+            }
+        }
+
+        /*
+            Todo
+
+            Add more complex logic to prevent keywords being suggested inside expressions
+
+            AND age = 23
+
+            AND something * something >= something
+
+            etc.
+        */
+        if split.len() >= 2
+            && (split[split.len() - 1].contains(&"and") || split[split.len() - 2].contains(&"and"))
+        {
+            return false;
+        }
+
+        /*
+            Todo
+
+            Add more complex logic to prevent keywords being suggested inside expressions
+
+            WHERE age = 23
+
+            WHERE something * something >= something
+
+            etc.
+        */
+        if split.len() >= 2
+            && (split[split.len() - 1].contains(&"where")
+                || split[split.len() - 2].contains(&"where"))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     #[warn(unused_mut)]
@@ -1078,8 +1227,9 @@ impl Backend {
         Ok(Some(CompletionResponse::Array(result)))
     }
 
-    fn should_suggest_fields(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_fields(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
@@ -1099,15 +1249,19 @@ impl Backend {
             return false;
         }
 
-        if trimmed_prefix.len() != prefix.len() && !splitted[splitted.len() - 1].contains(&",") {
+        if splitted.len() > 0
+            && trimmed_prefix.len() != prefix.len()
+            && !splitted[splitted.len() - 1].contains(&",")
+        {
             return false;
         }
 
         true
     }
 
-    fn should_suggest_from(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_from(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
@@ -1115,22 +1269,35 @@ impl Backend {
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        if !splitted.contains(&"select") || splitted.contains(&"from") {
+        if !splitted.contains(&"select")
+            || splitted.contains(&"from")
+            || line.to_lowercase().contains(&"from")
+        {
             return false;
         }
 
-        if splitted.len() <= 2 && splitted.contains(&"select") {
-            return false;
-        }
-
-        if splitted.contains(&"select")
-            && !splitted[splitted.len() - 1].contains(&",")
+        if splitted.len() == 1
+            && splitted.contains(&"select")
             && trimmed_prefix.len() != prefix.len()
         {
-            return true;
+            return false;
         }
 
-        false
+        if splitted.len() == 2
+            && splitted.contains(&"select")
+            && trimmed_prefix.len() == prefix.len()
+        {
+            return false;
+        }
+
+        if splitted.len() >= 3
+            && splitted.contains(&"select")
+            && splitted[splitted.len() - 1].contains(&",")
+        {
+            return false;
+        }
+
+        true
     }
 
     async fn get_table_completions(
@@ -1194,25 +1361,51 @@ impl Backend {
         return Ok(Some(CompletionResponse::Array(items)));
     }
 
-    fn should_ssuggest_table_completions(&self, line: &str, position: u32) -> bool {
-        let prefix = match line.get(..position as usize) {
+    // Works
+    fn should_suggest_table_completions(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
-
+        if let Some(semi_colon_pos) = line.find(&";") {
+            if position.character > semi_colon_pos as u32 {
+                return false;
+            }
+        }
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        if splitted.len() >= 2
+            && (splitted[splitted.len() - 2].contains(&"insert")
+                || splitted[splitted.len() - 1].contains(&"into"))
+        {
+            return true;
+        }
+
+        if splitted.len() >= 3
+            && ((splitted[splitted.len() - 2].contains(&"insert")
+                || splitted[splitted.len() - 1].contains(&"into"))
+                || (splitted[splitted.len() - 3].contains(&"insert")
+                    || splitted[splitted.len() - 2].contains(&"into")))
+        {
+            return true;
+        }
 
         if !splitted.contains(&"select") && !splitted.contains(&"from") {
             return false;
         }
-
-        if !(splitted[splitted.len() - 2].contains(&"from")
-            || splitted[splitted.len() - 1].contains(&"from"))
+        if splitted.len() >= 2
+            && !splitted[splitted.len() - 2].contains(&"from")
+            && !splitted[splitted.len() - 1].contains(&"from")
         {
             return false;
         }
-
+        if splitted.len() >= 2
+            && splitted[splitted.len() - 2].contains(&"from")
+            && trimmed_prefix.len() != prefix.len()
+        {
+            return false;
+        }
         true
     }
 

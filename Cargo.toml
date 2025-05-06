@@ -1,6 +1,13 @@
 [package]
 name = "cql_lsp"
+description = "CQL (Cassandra Query Language) LSP"
 version = "0.1.0"
+authors = ["アクゼスティア <akzestia@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+keywords = ["lsp", "cql", "language-server", "syntax"]
+categories = ["text-editors", "command-line-utilities"]
+repository = "https://github.com/Akzestia/cql-lsp"
 edition = "2024"
 
 [dependencies]

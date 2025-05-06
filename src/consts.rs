@@ -42,7 +42,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case CAST functions".to_string()),
             documentation: Some(Documentation::String("CAST function".to_string())),
-            insert_text: Some(r#"CAST("$0" AS "1$")"#.to_string()),
+            insert_text: Some(r#"CAST($0 AS )"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -51,7 +51,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case CAST functions".to_string()),
             documentation: Some(Documentation::String("CAST function".to_string())),
-            insert_text: Some(r#"cast("$0" AS "1$")"#.to_string()),
+            insert_text: Some(r#"cast($0 AS )"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -61,7 +61,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case TOKEN functions".to_string()),
             documentation: Some(Documentation::String("TOKEN function".to_string())),
-            insert_text: Some(r#"TOKEN("$0")"#.to_string()),
+            insert_text: Some(r#"TOKEN($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -70,7 +70,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case TOKEN functions".to_string()),
             documentation: Some(Documentation::String("TOKEN function".to_string())),
-            insert_text: Some(r#"token("$0")"#.to_string()),
+            insert_text: Some(r#"token($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -80,7 +80,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case case TTL functions".to_string()),
             documentation: Some(Documentation::String("TTL function".to_string())),
-            insert_text: Some(r#"TTL("$0")"#.to_string()),
+            insert_text: Some(r#"TTL($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -89,7 +89,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case TTL functions".to_string()),
             documentation: Some(Documentation::String("TTL function".to_string())),
-            insert_text: Some(r#"ttl("$0")"#.to_string()),
+            insert_text: Some(r#"ttl($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -99,7 +99,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case UUID functions".to_string()),
             documentation: Some(Documentation::String("UUID function".to_string())),
-            insert_text: Some(r#"UUID() "$0""#.to_string()),
+            insert_text: Some(r#"UUID() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -108,7 +108,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case UUID functions".to_string()),
             documentation: Some(Documentation::String("UUID function".to_string())),
-            insert_text: Some(r#"uuid() "$0""#.to_string()),
+            insert_text: Some(r#"uuid() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -118,7 +118,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case WRITETIME functions".to_string()),
             documentation: Some(Documentation::String("WRITETIME function".to_string())),
-            insert_text: Some(r#"WRITETIME("$0")"#.to_string()),
+            insert_text: Some(r#"WRITETIME($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -127,7 +127,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case WRITETIME functions".to_string()),
             documentation: Some(Documentation::String("WRITETIME function".to_string())),
-            insert_text: Some(r#"writetime("$0")"#.to_string()),
+            insert_text: Some(r#"writetime($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -141,7 +141,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case CURRENT_DATE functions".to_string()),
             documentation: Some(Documentation::String("CURRENT_DATE function".to_string())),
-            insert_text: Some(r#"CURRENT_DATE() "$0""#.to_string()),
+            insert_text: Some(r#"CURRENT_DATE() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -150,7 +150,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case CURRENT_DATE functions".to_string()),
             documentation: Some(Documentation::String("CURRENT_DATE function".to_string())),
-            insert_text: Some(r#"current_date() "$0""#.to_string()),
+            insert_text: Some(r#"current_date() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -160,7 +160,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case CURRENT_TIME functions".to_string()),
             documentation: Some(Documentation::String("CURRENT_TIME function".to_string())),
-            insert_text: Some(r#"CURRENT_TIME() "$0""#.to_string()),
+            insert_text: Some(r#"CURRENT_TIME() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -169,7 +169,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case CURRENT_TIME functions".to_string()),
             documentation: Some(Documentation::String("CURRENT_TIME function".to_string())),
-            insert_text: Some(r#"current_time() "$0""#.to_string()),
+            insert_text: Some(r#"current_time() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -181,7 +181,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             documentation: Some(Documentation::String(
                 "CURRENT_TIMESTAMP function".to_string(),
             )),
-            insert_text: Some(r#"CURRENT_TIMESTAMP() "$0""#.to_string()),
+            insert_text: Some(r#"CURRENT_TIMESTAMP() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -192,7 +192,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             documentation: Some(Documentation::String(
                 "CURRENT_TIMESTAMP function".to_string(),
             )),
-            insert_text: Some(r#"current_timestamp() "$0""#.to_string()),
+            insert_text: Some(r#"current_timestamp() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -204,7 +204,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             documentation: Some(Documentation::String(
                 "CURRENT_TIMEUUID function".to_string(),
             )),
-            insert_text: Some(r#"CURRENT_TIMEUUID() "$0""#.to_string()),
+            insert_text: Some(r#"CURRENT_TIMEUUID() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -215,7 +215,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             documentation: Some(Documentation::String(
                 "CURRENT_TIMEUUID function".to_string(),
             )),
-            insert_text: Some(r#"current_timeuuid() "$0""#.to_string()),
+            insert_text: Some(r#"current_timeuuid() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -225,7 +225,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case FLOOR functions".to_string()),
             documentation: Some(Documentation::String("FLOOR function".to_string())),
-            insert_text: Some(r#"FLOOR("$0")"#.to_string()),
+            insert_text: Some(r#"FLOOR($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -234,7 +234,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case FLOOR functions".to_string()),
             documentation: Some(Documentation::String("FLOOR function".to_string())),
-            insert_text: Some(r#"floor("$0")"#.to_string()),
+            insert_text: Some(r#"floor($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -244,7 +244,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case NOW functions".to_string()),
             documentation: Some(Documentation::String("NOW function".to_string())),
-            insert_text: Some(r#"NOW() "$0""#.to_string()),
+            insert_text: Some(r#"NOW() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -253,7 +253,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case NOW functions".to_string()),
             documentation: Some(Documentation::String("NOW function".to_string())),
-            insert_text: Some(r#"now() "$0""#.to_string()),
+            insert_text: Some(r#"now() $0"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -263,7 +263,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case MIN_TIMEUUID functions".to_string()),
             documentation: Some(Documentation::String("MIN_TIMEUUID function".to_string())),
-            insert_text: Some(r#"MIN_TIMEUUID("$0")"#.to_string()),
+            insert_text: Some(r#"MIN_TIMEUUID($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -272,7 +272,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case MIN_TIMEUUID functions".to_string()),
             documentation: Some(Documentation::String("MIN_TIMEUUID function".to_string())),
-            insert_text: Some(r#"min_timeuuid("$0")"#.to_string()),
+            insert_text: Some(r#"min_timeuuid($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -282,7 +282,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case MAX_TIMEUUID functions".to_string()),
             documentation: Some(Documentation::String("MAX_TIMEUUID function".to_string())),
-            insert_text: Some(r#"MAX_TIMEUUID("$0")"#.to_string()),
+            insert_text: Some(r#"MAX_TIMEUUID($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -291,7 +291,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case MAX_TIMEUUID functions".to_string()),
             documentation: Some(Documentation::String("MAX_TIMEUUID function".to_string())),
-            insert_text: Some(r#"max_timeuuid("$0")"#.to_string()),
+            insert_text: Some(r#"max_timeuuid($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -305,7 +305,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case TODATE functions".to_string()),
             documentation: Some(Documentation::String("TODATE function".to_string())),
-            insert_text: Some(r#"TODATE("$0")"#.to_string()),
+            insert_text: Some(r#"TODATE($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -314,7 +314,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case TODATE functions".to_string()),
             documentation: Some(Documentation::String("TODATE function".to_string())),
-            insert_text: Some(r#"todate("$0")"#.to_string()),
+            insert_text: Some(r#"todate($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -324,7 +324,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Upper case TOTIMESTAMP functions".to_string()),
             documentation: Some(Documentation::String("TOTIMESTAMP function".to_string())),
-            insert_text: Some(r#"TOTIMESTAMP("$0")"#.to_string()),
+            insert_text: Some(r#"TOTIMESTAMP($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -333,7 +333,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("Lower case TOTIMESTAMP functions".to_string()),
             documentation: Some(Documentation::String("TOTIMESTAMP function".to_string())),
-            insert_text: Some(r#"totimestamp("$0")"#.to_string()),
+            insert_text: Some(r#"totimestamp($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -345,7 +345,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             documentation: Some(Documentation::String(
                 "TOUNIXTIMESTAMP function".to_string(),
             )),
-            insert_text: Some(r#"TOUNIXTIMESTAMP("$0")"#.to_string()),
+            insert_text: Some(r#"TOUNIXTIMESTAMP($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -356,7 +356,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             documentation: Some(Documentation::String(
                 "TOUNIXTIMESTAMP function".to_string(),
             )),
-            insert_text: Some(r#"tounixtimestamp("$0")"#.to_string()),
+            insert_text: Some(r#"tounixtimestamp($0)"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -370,7 +370,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("blobAs functions".to_string()),
             documentation: Some(Documentation::String("blobAs function".to_string())),
-            insert_text: Some(r#"blobAs<"$0">("$1")"#.to_string()),
+            insert_text: Some(r#"blobAs<$0>()"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -380,7 +380,7 @@ pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
             kind: Some(CompletionItemKind::FUNCTION),
             detail: Some("AsBlob functions".to_string()),
             documentation: Some(Documentation::String("AsBlob function".to_string())),
-            insert_text: Some(r#"<"$0">AsBlob("1$")"#.to_string()),
+            insert_text: Some(r#"<$0>AsBlob()"#.to_string()),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },

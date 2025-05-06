@@ -10,13 +10,16 @@ use crate::consts::*;
 use crate::cqlsh::{self, Column, CqlSettings};
 
 /*
-    Note:
+    Based on DataStax HCD && CQL versions 3.4+
 
-    The lsp code contains a HUGE amount of code so,
-    for better navigation there some headers below:
+    HCD
+    https://docs.datastax.com/en/cql/hcd/reference/cql-reference-about.html
+    CQL
+    https://cassandra.apache.org/doc/latest/cassandra/developing/cql/cql_singlefile.html
 
-    XAR-1: vec[] of keywords
-    XAR-2: vec[] of types
+    Note!
+
+    Some of the default CQL functions will be different because of DataStax HCD extensions
 */
 
 #[derive(Debug)]
@@ -1138,13 +1141,6 @@ impl Backend {
                                 let text_edit_str =
                                     self.column_to_text_edit(line, &item, Some(&ksp));
 
-                                info!(
-                                    "TEXT: {} | {}-{}",
-                                    text_edit_str,
-                                    self.get_start_offset(line, position),
-                                    text_edit_str.len() as u32
-                                );
-
                                 let text_edit = TextEdit {
                                     range: Range {
                                         start: Position {
@@ -1223,13 +1219,6 @@ impl Backend {
                         continue;
                     }
                     let text_edit_str = self.column_to_text_edit(line, &item, Some(&keyspace));
-
-                    info!(
-                        "TEXT: {} | {}-{}",
-                        text_edit_str,
-                        self.get_start_offset(line, position),
-                        text_edit_str.len() as u32
-                    );
 
                     let text_edit = TextEdit {
                         range: Range {

@@ -10,5 +10,7 @@ target/
 *.cql
 
 # Shell scripts
-deploy.sh
-package.sh
+# deploy.sh
+# package.sh
+
+*.tar

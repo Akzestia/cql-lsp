@@ -2,6 +2,393 @@ use once_cell::sync::Lazy;
 use tower_lsp::lsp_types::*;
 
 /*
+    Based on DataStax HCD && CQL versions 3.4+
+
+    HCD
+    https://docs.datastax.com/en/cql/hcd/reference/cql-reference-about.html
+    CQL
+    https://cassandra.apache.org/doc/latest/cassandra/developing/cql/cql_singlefile.html
+
+    Note!
+
+    Some of the default CQL functions will be different because of DataStax HCD extensions
+*/
+
+/*
+    CQL Native functions
+
+    While they are already included inside KEYWORDS,
+    We still need to have a separate list of functions, in order
+    to suggest them in specific cases like inside SELECT ... FROM statement
+    or inside WHERE ... && AND ... where u can't sugggest full list of keywords.
+
+    Note!
+
+    This list doesn't include deprecated functions:
+
+    -------------------[DEPRECATED FUNCTIONS]-------------------
+    dateOf
+    unixTimestampOf
+    -------------------[DEPRECATED FUNCTIONS]-------------------
+*/
+
+pub static CQL_NATIVE_FUNCTIONS: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
+    vec![
+        // -----------------------[Scalar functions]-----------------------
+
+        // CAST
+        CompletionItem {
+            label: "CAST".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case CAST functions".to_string()),
+            documentation: Some(Documentation::String("CAST function".to_string())),
+            insert_text: Some(r#"CAST("$0" AS "1$")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "cast".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case CAST functions".to_string()),
+            documentation: Some(Documentation::String("CAST function".to_string())),
+            insert_text: Some(r#"cast("$0" AS "1$")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // TOKEN
+        CompletionItem {
+            label: "TOKEN".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case TOKEN functions".to_string()),
+            documentation: Some(Documentation::String("TOKEN function".to_string())),
+            insert_text: Some(r#"TOKEN("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "token".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case TOKEN functions".to_string()),
+            documentation: Some(Documentation::String("TOKEN function".to_string())),
+            insert_text: Some(r#"token("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // TTL
+        CompletionItem {
+            label: "TTL".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case case TTL functions".to_string()),
+            documentation: Some(Documentation::String("TTL function".to_string())),
+            insert_text: Some(r#"TTL("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "ttl".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case TTL functions".to_string()),
+            documentation: Some(Documentation::String("TTL function".to_string())),
+            insert_text: Some(r#"ttl("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // UUID
+        CompletionItem {
+            label: "UUID".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case UUID functions".to_string()),
+            documentation: Some(Documentation::String("UUID function".to_string())),
+            insert_text: Some(r#"UUID() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "uuid".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case UUID functions".to_string()),
+            documentation: Some(Documentation::String("UUID function".to_string())),
+            insert_text: Some(r#"uuid() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // WriteTime
+        CompletionItem {
+            label: "WRITETIME".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case WRITETIME functions".to_string()),
+            documentation: Some(Documentation::String("WRITETIME function".to_string())),
+            insert_text: Some(r#"WRITETIME("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "writetime".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case WRITETIME functions".to_string()),
+            documentation: Some(Documentation::String("WRITETIME function".to_string())),
+            insert_text: Some(r#"writetime("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // -----------------------[Scalar functions]----------------------
+
+        // -----------------------[Date and time functions]------------------------
+
+        // CurrentDate
+        CompletionItem {
+            label: "CURRENT_DATE".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case CURRENT_DATE functions".to_string()),
+            documentation: Some(Documentation::String("CURRENT_DATE function".to_string())),
+            insert_text: Some(r#"CURRENT_DATE() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "current_date".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case CURRENT_DATE functions".to_string()),
+            documentation: Some(Documentation::String("CURRENT_DATE function".to_string())),
+            insert_text: Some(r#"current_date() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // CurrentTime
+        CompletionItem {
+            label: "CURRENT_TIME".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case CURRENT_TIME functions".to_string()),
+            documentation: Some(Documentation::String("CURRENT_TIME function".to_string())),
+            insert_text: Some(r#"CURRENT_TIME() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "current_time".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case CURRENT_TIME functions".to_string()),
+            documentation: Some(Documentation::String("CURRENT_TIME function".to_string())),
+            insert_text: Some(r#"current_time() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // CurrentTimestamp
+        CompletionItem {
+            label: "CURRENT_TIMESTAMP".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case CURRENT_TIMESTAMP functions".to_string()),
+            documentation: Some(Documentation::String(
+                "CURRENT_TIMESTAMP function".to_string(),
+            )),
+            insert_text: Some(r#"CURRENT_TIMESTAMP() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "current_timestamp".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case CURRENT_TIMESTAMP functions".to_string()),
+            documentation: Some(Documentation::String(
+                "CURRENT_TIMESTAMP function".to_string(),
+            )),
+            insert_text: Some(r#"current_timestamp() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // CurrentTimeUuid
+        CompletionItem {
+            label: "CURRENT_TIMEUUID".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case CURRENT_TIMEUUID functions".to_string()),
+            documentation: Some(Documentation::String(
+                "CURRENT_TIMEUUID function".to_string(),
+            )),
+            insert_text: Some(r#"CURRENT_TIMEUUID() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "current_timeuuid".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case CURRENT_TIMEUUID functions".to_string()),
+            documentation: Some(Documentation::String(
+                "CURRENT_TIMEUUID function".to_string(),
+            )),
+            insert_text: Some(r#"current_timeuuid() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // Floor
+        CompletionItem {
+            label: "FLOOR".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case FLOOR functions".to_string()),
+            documentation: Some(Documentation::String("FLOOR function".to_string())),
+            insert_text: Some(r#"FLOOR("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "floor".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case FLOOR functions".to_string()),
+            documentation: Some(Documentation::String("FLOOR function".to_string())),
+            insert_text: Some(r#"floor("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // Now
+        CompletionItem {
+            label: "NOW".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case NOW functions".to_string()),
+            documentation: Some(Documentation::String("NOW function".to_string())),
+            insert_text: Some(r#"NOW() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "now".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case NOW functions".to_string()),
+            documentation: Some(Documentation::String("NOW function".to_string())),
+            insert_text: Some(r#"now() "$0""#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // minTimeUuid
+        CompletionItem {
+            label: "MIN_TIMEUUID".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case MIN_TIMEUUID functions".to_string()),
+            documentation: Some(Documentation::String("MIN_TIMEUUID function".to_string())),
+            insert_text: Some(r#"MIN_TIMEUUID("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "min_timeuuid".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case MIN_TIMEUUID functions".to_string()),
+            documentation: Some(Documentation::String("MIN_TIMEUUID function".to_string())),
+            insert_text: Some(r#"min_timeuuid("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // maxTimeUuid
+        CompletionItem {
+            label: "MAX_TIMEUUID".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case MAX_TIMEUUID functions".to_string()),
+            documentation: Some(Documentation::String("MAX_TIMEUUID function".to_string())),
+            insert_text: Some(r#"MAX_TIMEUUID("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "max_timeuuid".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case MAX_TIMEUUID functions".to_string()),
+            documentation: Some(Documentation::String("MAX_TIMEUUID function".to_string())),
+            insert_text: Some(r#"max_timeuuid("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // -----------------------[Date and time functions]------------------------
+
+        // -----------------------[Date and time conversion]------------------------
+
+        // toDate
+        CompletionItem {
+            label: "TODATE".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case TODATE functions".to_string()),
+            documentation: Some(Documentation::String("TODATE function".to_string())),
+            insert_text: Some(r#"TODATE("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "todate".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case TODATE functions".to_string()),
+            documentation: Some(Documentation::String("TODATE function".to_string())),
+            insert_text: Some(r#"todate("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // toTimestamp
+        CompletionItem {
+            label: "TOTIMESTAMP".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case TOTIMESTAMP functions".to_string()),
+            documentation: Some(Documentation::String("TOTIMESTAMP function".to_string())),
+            insert_text: Some(r#"TOTIMESTAMP("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "totimestamp".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case TOTIMESTAMP functions".to_string()),
+            documentation: Some(Documentation::String("TOTIMESTAMP function".to_string())),
+            insert_text: Some(r#"totimestamp("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // toUnixTimestamp
+        CompletionItem {
+            label: "TOUNIXTIMESTAMP".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Upper case TOUNIXTIMESTAMP functions".to_string()),
+            documentation: Some(Documentation::String(
+                "TOUNIXTIMESTAMP function".to_string(),
+            )),
+            insert_text: Some(r#"TOUNIXTIMESTAMP("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        CompletionItem {
+            label: "tounixtimestamp".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("Lower case TOUNIXTIMESTAMP functions".to_string()),
+            documentation: Some(Documentation::String(
+                "TOUNIXTIMESTAMP function".to_string(),
+            )),
+            insert_text: Some(r#"tounixtimestamp("$0")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // -----------------------[Date and time conversion]------------------------
+
+        // -----------------------[Blob conversion]------------------------
+
+        // blobAs
+        CompletionItem {
+            label: "blobAs".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("blobAs functions".to_string()),
+            documentation: Some(Documentation::String("blobAs function".to_string())),
+            insert_text: Some(r#"blobAs<"$0">("$1")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // AsBlob
+        CompletionItem {
+            label: "AsBlob".to_string(),
+            kind: Some(CompletionItemKind::FUNCTION),
+            detail: Some("AsBlob functions".to_string()),
+            documentation: Some(Documentation::String("AsBlob function".to_string())),
+            insert_text: Some(r#"<"$0">AsBlob("1$")"#.to_string()),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            ..Default::default()
+        },
+        // -----------------------[Blob conversion]------------------------
+    ]
+});
+
+/*
     Lower case cql_keywords
 
     Separate list of keywords which

@@ -1183,6 +1183,12 @@ impl Backend {
                                 });
                             }
                         }
+
+                        let mut x: Vec<CompletionItem> =
+                            CQL_NATIVE_FUNCTIONS.iter().cloned().collect();
+
+                        result.append(&mut x);
+
                         return Ok(Some(CompletionResponse::Array(result)));
                     }
                 } else {
@@ -1262,6 +1268,10 @@ impl Backend {
                     });
                 }
             }
+
+            let mut x: Vec<CompletionItem> = CQL_NATIVE_FUNCTIONS.iter().cloned().collect();
+
+            result.append(&mut x);
             return Ok(Some(CompletionResponse::Array(result)));
         }
 
@@ -1334,6 +1344,9 @@ impl Backend {
             }
         }
 
+        let mut x: Vec<CompletionItem> = CQL_NATIVE_FUNCTIONS.iter().cloned().collect();
+
+        result.append(&mut x);
         Ok(Some(CompletionResponse::Array(result)))
     }
 

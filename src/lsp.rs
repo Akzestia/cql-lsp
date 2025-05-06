@@ -1141,13 +1141,6 @@ impl Backend {
                                 let text_edit_str =
                                     self.column_to_text_edit(line, &item, Some(&ksp));
 
-                                info!(
-                                    "TEXT: {} | {}-{}",
-                                    text_edit_str,
-                                    self.get_start_offset(line, position),
-                                    text_edit_str.len() as u32
-                                );
-
                                 let text_edit = TextEdit {
                                     range: Range {
                                         start: Position {
@@ -1226,13 +1219,6 @@ impl Backend {
                         continue;
                     }
                     let text_edit_str = self.column_to_text_edit(line, &item, Some(&keyspace));
-
-                    info!(
-                        "TEXT: {} | {}-{}",
-                        text_edit_str,
-                        self.get_start_offset(line, position),
-                        text_edit_str.len() as u32
-                    );
 
                     let text_edit = TextEdit {
                         range: Range {

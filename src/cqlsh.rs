@@ -9,6 +9,14 @@ use std::time::Duration;
 
 use log::info;
 
+/*
+    cqlsh.rs
+
+    A custom CQL shell implementation in Rust using the ScyllaDB Rust driver.
+    This should be compatible with most Cassandra Query Language (CQL) based
+    databases, including ScyllaDB and Apache Cassandra.
+*/
+
 #[derive(DeserializeRow)]
 pub struct Table {
     pub keyspace_name: String,

@@ -84,46 +84,21 @@ impl Backend {
         let mut met_space = false;
 
         while index < line.len() {
-            if !met_space
-                && line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failed RLSSC: Index {index}");
-                    '_'
-                }) == ' '
-            {
+            if !met_space && line.chars().nth(index).unwrap_or_else(|| '_') == ' ' {
                 met_space = true;
             }
 
-            if met_space
-                && line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failes RLSSC: Index {index}");
-                    '_'
-                }) != ' '
-            {
+            if met_space && line.chars().nth(index).unwrap_or_else(|| '_') != ' ' {
                 met_space = false;
             }
 
             if met_space
                 && index != line.len() - 1
-                && (line.chars().nth(index + 1).unwrap_or_else(|| {
-                    info!("Failed RLSSC: Index {index}");
-                    '_'
-                }) == ' '
-                    || line.chars().nth(index + 1).unwrap_or_else(|| {
-                        info!("Failed RLSSC: Index {index}");
-                        '_'
-                    }) == ';'
-                    || line.chars().nth(index + 1).unwrap_or_else(|| {
-                        info!("Failed RLSSC: Index {index}");
-                        '_'
-                    }) == ','
-                    || line.chars().nth(index + 1).unwrap_or_else(|| {
-                        info!("Failed RLSSC: Index {index}");
-                        '_'
-                    }) == ')'
-                    || line.chars().nth(index + 1).unwrap_or_else(|| {
-                        info!("Failed RLSSC: Index {index}");
-                        '_'
-                    }) == '>')
+                && (line.chars().nth(index + 1).unwrap_or_else(|| '_') == ' '
+                    || line.chars().nth(index + 1).unwrap_or_else(|| '_') == ';'
+                    || line.chars().nth(index + 1).unwrap_or_else(|| '_') == ','
+                    || line.chars().nth(index + 1).unwrap_or_else(|| '_') == ')'
+                    || line.chars().nth(index + 1).unwrap_or_else(|| '_') == '>')
             {
                 line.remove(index);
                 met_space = false;
@@ -144,37 +119,22 @@ impl Backend {
 
         while index < line.len() {
             if !met_wild_card
-                && (line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failed RLSSC: Index {index}");
-                    '_'
-                }) == '('
-                    || line.chars().nth(index).unwrap_or_else(|| {
-                        info!("Failed RLSSC: Index {index}");
-                        '_'
-                    }) == '<')
+                && (line.chars().nth(index).unwrap_or_else(|| '_') == '('
+                    || line.chars().nth(index).unwrap_or_else(|| '_') == '<')
             {
                 met_wild_card = true;
             }
 
             if met_wild_card
-                && line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failes RLSSC: Index {index}");
-                    '_'
-                }) != '('
-                && line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failes RLSSC: Index {index}");
-                    '_'
-                }) != '<'
+                && line.chars().nth(index).unwrap_or_else(|| '_') != '('
+                && line.chars().nth(index).unwrap_or_else(|| '_') != '<'
             {
                 met_wild_card = false;
             }
 
             if met_wild_card
                 && index != line.len() - 1
-                && line.chars().nth(index + 1).unwrap_or_else(|| {
-                    info!("Failed RLSSC: Index {index}");
-                    '_'
-                }) == ' '
+                && line.chars().nth(index + 1).unwrap_or_else(|| '_') == ' '
             {
                 line.remove(index + 1);
                 met_wild_card = false;
@@ -270,8 +230,6 @@ impl Backend {
         let mut last_colon = false;
         let mut index = 0;
 
-        info!("Original: {line}");
-
         /*
             The reason for using unwrap_or_else is
             that when line contains Japanese (non-standart range ASCII)
@@ -279,26 +237,9 @@ impl Backend {
             to out of bounds access
         */
         while index < line.len() {
-            info!(
-                "Index: {index} Line {line} Char {}",
-                line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failed: Index {index}");
-                    '_'
-                })
-            );
-            if !last_colon
-                && line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failed: Index {index}");
-                    '_'
-                }) == ';'
-            {
+            if !last_colon && line.chars().nth(index).unwrap_or_else(|| '_') == ';' {
                 last_colon = true;
-            } else if last_colon
-                && line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failed: Index {index}");
-                    '_'
-                }) == ';'
-            {
+            } else if last_colon && line.chars().nth(index).unwrap_or_else(|| '_') == ';' {
                 line.remove(index);
                 last_colon = false;
                 if index >= 2 {
@@ -306,17 +247,11 @@ impl Backend {
                 } else {
                     index -= 1;
                 }
-            } else if line.chars().nth(index).unwrap_or_else(|| {
-                info!("Failed: Index {index}");
-                '_'
-            }) != ';'
-            {
+            } else if line.chars().nth(index).unwrap_or_else(|| '_') != ';' {
                 last_colon = false;
             }
             index += 1;
         }
-
-        info!("After colon fix: {line}");
     }
 
     // Removes any duplicate spaces
@@ -331,19 +266,9 @@ impl Backend {
             to out of bounds access
         */
         while index < line.len() {
-            if !last_space
-                && line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failed: Index {index}");
-                    '_'
-                }) == ' '
-            {
+            if !last_space && line.chars().nth(index).unwrap_or_else(|| '_') == ' ' {
                 last_space = true;
-            } else if last_space
-                && line.chars().nth(index).unwrap_or_else(|| {
-                    info!("Failed: Index {index}");
-                    '_'
-                }) == ' '
-            {
+            } else if last_space && line.chars().nth(index).unwrap_or_else(|| '_') == ' ' {
                 line.remove(index);
                 last_space = false;
                 if index >= 2 {
@@ -351,11 +276,7 @@ impl Backend {
                 } else {
                     index -= 1;
                 }
-            } else if line.chars().nth(index).unwrap_or_else(|| {
-                info!("Failed: Index {index}");
-                '_'
-            }) != ' '
-            {
+            } else if line.chars().nth(index).unwrap_or_else(|| '_') != ' ' {
                 last_space = false;
             }
             index += 1;
@@ -928,8 +849,6 @@ impl Backend {
 
             let mut index_up = position.line as usize;
 
-            info!("\n\nDoc len: {}\nIndex Up: {}\n\n", splitx.len(), index_up);
-
             while index_up > 0 && index_up < splitx.len() {
                 if (!splitx[index_up].contains(&"(")
                     && KEYWORDS_STRINGS_LWC.contains(&splitx[index_up].to_string()))
@@ -938,7 +857,6 @@ impl Backend {
                     break;
                 }
 
-                info!("SPLITX: {}", splitx[index_up]);
                 if splitx[index_up].contains(&"(") {
                     return false;
                 }
@@ -996,8 +914,6 @@ impl Backend {
         if let Some(ref document_lock) = *current {
             let document = document_lock.read().await;
 
-            info!("Document Text: [{:?}]", document.text.as_bytes());
-
             let split: Vec<&str> = document.text.split('\n').collect();
 
             let mut keyspace_latest: String = "".to_string();
@@ -1005,10 +921,7 @@ impl Backend {
 
             for str in split {
                 let index = position.line;
-                info!("Pos: {pos} | {index}");
-                info!("Strings: {str} | {pos}");
                 if index == pos {
-                    info!("hit line");
                     if keyspace_latest.len() > 0 {
                         return Some(keyspace_latest);
                     }
@@ -1019,7 +932,6 @@ impl Backend {
                 if self.is_use_keyspace_line(str) {
                     let istr: Vec<char> = str.trim().chars().collect();
                     let trimeed = str.replace(' ', "");
-                    info!("Trimed str: {trimeed}");
                     let extracted_ksp = String::from_iter(&istr[5..istr.len() - 2]);
                     keyspace_latest = extracted_ksp.clone();
                 }
@@ -1198,8 +1110,6 @@ impl Backend {
         }
 
         if let Some(keyspace) = self.latest_keyspace(position).await {
-            info!("Latest: [{keyspace}]");
-
             let mut items: Vec<Column> = Vec::new();
 
             if tbl_name != "" {
@@ -1289,10 +1199,7 @@ impl Backend {
 
         let items = cqlsh::query_g_fields(&self.config)
             .await
-            .unwrap_or_else(|e| {
-                info!("Error {:?}", e);
-                vec![]
-            });
+            .unwrap_or_else(|e| vec![]);
 
         let mut result: Vec<CompletionItem> = Vec::new();
 
@@ -1614,8 +1521,6 @@ impl Backend {
         line: &str,
         position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        info!("Suggesting keyspace formats");
-
         let mut items = Vec::new();
         for keyspace in self.get_keyspaces().await {
             let mut index = position.character as usize;
@@ -1656,16 +1561,12 @@ impl Backend {
     }
 
     fn handle_keywords_completion(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        info!("Offering keyword completions");
-
         return Ok(Some(CompletionResponse::Array(
             KEYWORDS.iter().cloned().collect(),
         )));
     }
 
     fn handle_types_completion(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        info!("Offering types completions");
-
         return Ok(Some(CompletionResponse::Array(
             TYPES.iter().cloned().collect(),
         )));
@@ -1676,12 +1577,11 @@ impl Backend {
         line: &str,
         position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        info!("Offering fields completions");
-
-        if let Some(response) = self.get_fields(line, position).await.unwrap_or_else(|e| {
-            info!("{e}");
-            Some(CompletionResponse::Array(vec![]))
-        }) {
+        if let Some(response) = self
+            .get_fields(line, position)
+            .await
+            .unwrap_or_else(|e| Some(CompletionResponse::Array(vec![])))
+        {
             return Ok(Some(response));
         }
 
@@ -1689,8 +1589,6 @@ impl Backend {
     }
 
     fn handle_from_completion(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        info!("Offering FROM completions");
-
         return Ok(Some(CompletionResponse::Array(vec![
             CompletionItem {
                 label: "FROM".to_string(),
@@ -1717,15 +1615,10 @@ impl Backend {
         &self,
         position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        info!("Offering TABLE completions");
-
         if let Some(tables) = self
             .get_table_completions(position)
             .await
-            .unwrap_or_else(|e| {
-                info!("{e}");
-                Some(CompletionResponse::Array(vec![]))
-            })
+            .unwrap_or_else(|e| Some(CompletionResponse::Array(vec![])))
         {
             return Ok(Some(tables));
         }
@@ -1736,8 +1629,6 @@ impl Backend {
     async fn handle_out_of_string_graph_engine_completion(
         &self,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        info!("Offering graph engine completions");
-
         let mut items: Vec<CompletionItem> = Vec::new();
 
         for item in self.get_graph_engine_types() {
@@ -1757,8 +1648,6 @@ impl Backend {
         line: &str,
         position: &Position,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
-        info!("Offering graph engine completions");
-
         if let Some(prefix) = line.get(..position.character as usize) {
             if let Some(quote_pos) = prefix.rfind(|c| c == '"' || c == '\'') {
                 let quote_char = prefix.chars().nth(quote_pos).unwrap_or('"');
@@ -1882,8 +1771,6 @@ impl LanguageServer for Backend {
             let mut pos = 0;
 
             for n in 0..lines.len() {
-                info!("Line[{pos}]: {}", lines[n]);
-
                 pos += 1;
             }
 
@@ -1894,14 +1781,12 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        info!("LSP initialized!");
         self.client
             .log_message(MessageType::INFO, "LSP initialized!")
             .await;
     }
 
     async fn shutdown(&self) -> tower_lsp::jsonrpc::Result<()> {
-        info!("LSP shutdown!");
         Ok(())
     }
 
@@ -1923,8 +1808,6 @@ impl LanguageServer for Backend {
                     document.change(uri.clone(), change.text.clone());
                 }
             }
-
-            info!("Document changed: {}", uri);
         }
     }
 
@@ -1947,7 +1830,6 @@ impl LanguageServer for Backend {
             .await
             .insert(uri.clone(), text.clone());
 
-        info!("Opened document: {}", uri);
         self.client
             .log_message(MessageType::INFO, format!("Opened: {}", uri))
             .await;

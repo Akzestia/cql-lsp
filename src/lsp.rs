@@ -872,6 +872,116 @@ impl Backend {
             }
         }
 
+        if lw.contains(&"create") && lw.contains(&"if not exists") {
+            let mut index = lw.rfind(&"exists").unwrap();
+            index += 6;
+
+            if position.character > index as u32
+                && (split[split.len() - 1] == "exists" || split[split.len() - 2] == "exists")
+            {
+                return false;
+            }
+        }
+
+        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"table") {
+            let mut index = lw.rfind(&"table").unwrap();
+            index += 5;
+
+            if position.character > index as u32
+                && (split[split.len() - 1] == "table" || split[split.len() - 2] == "table")
+            {
+                return false;
+            }
+        }
+
+        if lw.contains(&"create") && lw.contains(&"aggregate") {
+            let mut index = lw.rfind(&"aggregate").unwrap();
+            index += 9;
+
+            if position.character > index as u32
+                && (split[split.len() - 1] == "aggregate" || split[split.len() - 2] == "aggregate")
+            {
+                return false;
+            }
+        }
+
+        if lw.contains(&"create") && lw.contains(&"function") {
+            let mut index = lw.rfind(&"function").unwrap();
+            index += 8;
+
+            if position.character > index as u32
+                && (split[split.len() - 1] == "function" || split[split.len() - 2] == "function")
+            {
+                return false;
+            }
+        }
+
+        if lw.contains(&"create") && lw.contains(&"index") {
+            let mut index = lw.rfind(&"index").unwrap();
+            index += 5;
+
+            if position.character > index as u32
+                && (split[split.len() - 1] == "index" || split[split.len() - 2] == "index")
+            {
+                return false;
+            }
+        }
+
+        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"keyspace") {
+            let mut keyspace = lw.rfind(&"keyspace").unwrap();
+            keyspace += 8;
+
+            if position.character > keyspace as u32
+                && (split[split.len() - 1] == "keyspace" || split[split.len() - 2] == "keyspace")
+            {
+                return false;
+            }
+        }
+
+        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"view") {
+            let mut keyspace = lw.rfind(&"view").unwrap();
+            keyspace += 4;
+
+            if position.character > keyspace as u32
+                && (split[split.len() - 1] == "view" || split[split.len() - 2] == "view")
+            {
+                return false;
+            }
+        }
+
+        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"role") {
+            let mut keyspace = lw.rfind(&"role").unwrap();
+            keyspace += 4;
+
+            if position.character > keyspace as u32
+                && (split[split.len() - 1] == "role" || split[split.len() - 2] == "role")
+            {
+                return false;
+            }
+        }
+
+        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"type") {
+            let mut keyspace = lw.rfind(&"type").unwrap();
+            keyspace += 4;
+
+            if position.character > keyspace as u32
+                && (split[split.len() - 1] == "type" || split[split.len() - 2] == "type")
+            {
+                return false;
+            }
+        }
+
+        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"user") {
+            let mut keyspace = lw.rfind(&"user").unwrap();
+            keyspace += 4;
+
+            if position.character > keyspace as u32
+                && (split[split.len() - 1] == "user" || split[split.len() - 2] == "user")
+            {
+                return false;
+            }
+        }
+
         /*
             Todo
 

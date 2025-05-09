@@ -804,11 +804,13 @@ impl Backend {
             }
         }
 
-        if line.to_lowercase().contains(&"use") {
+        let lw = line.to_lowercase();
+
+        if lw.contains(&"use") {
             return false;
         }
 
-        if line.to_lowercase().contains(&"select") && line.to_lowercase().contains(&"from") {
+        if lw.contains(&"select") && lw.contains(&"from") {
             if let Some(from_pos) = line.find(&";") {
                 if position.character < (from_pos + 1) as u32 {
                     return false;

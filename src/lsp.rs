@@ -1556,6 +1556,45 @@ impl Backend {
         true
     }
 
+    fn should_suggest_if_not_exists(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let lw = prefix.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() < 2 {
+            return false;
+        }
+
+        if split.contains(&"create")
+            && ((split[split.len() - 1].to_lowercase() == "table"
+                || split[split.len() - 2].to_lowercase() == "table")
+                || (split[split.len() - 1].to_lowercase() == "view"
+                    || split[split.len() - 2].to_lowercase() == "view")
+                || (split[split.len() - 1].to_lowercase() == "keyspace"
+                    || split[split.len() - 2].to_lowercase() == "keyspace")
+                || (split[split.len() - 1].to_lowercase() == "aggregate"
+                    || split[split.len() - 2].to_lowercase() == "aggregate")
+                || (split[split.len() - 1].to_lowercase() == "function"
+                    || split[split.len() - 2].to_lowercase() == "function")
+                || (split[split.len() - 1].to_lowercase() == "index"
+                    || split[split.len() - 2].to_lowercase() == "index")
+                || (split[split.len() - 1].to_lowercase() == "role"
+                    || split[split.len() - 2].to_lowercase() == "role")
+                || (split[split.len() - 1].to_lowercase() == "type"
+                    || split[split.len() - 2].to_lowercase() == "type")
+                || (split[split.len() - 1].to_lowercase() == "user")
+                || split[split.len() - 2].to_lowercase() == "user")
+        {
+            return true;
+        }
+
+        false
+    }
+
     // -----------------------------[Handlers]-----------------------------
 
     async fn handle_in_string_keyspace_completion(
@@ -1836,17 +1875,28 @@ impl Backend {
         Ok(Some(CompletionResponse::Array(vec![])))
     }
 
-    fn get_document(&self, uri: &Url) -> Option<Document> {
-        let documents = match self.documents.try_read() {
-            Ok(docs) => docs,
-            Err(_) => return None,
-        };
+    fn handle_if_not_exists(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let items = vec![
+            CompletionItem {
+                label: "IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ];
 
-        documents.get(uri).map(|text| Document {
-            uri: uri.clone(),
-            text: text.clone(),
-        })
+        Ok(Some(CompletionResponse::Array(items)))
     }
+
+    // -----------------------------[Helper functions]-----------------------------
 }
 
 #[tower_lsp::async_trait]
@@ -1978,6 +2028,7 @@ impl LanguageServer for Backend {
         let ssh_fields = self.should_suggest_fields(line, &position);
         let ssh_from = self.should_suggest_from(line, &position);
         let ssh_table_completions = self.should_suggest_table_completions(line, &position);
+        let ssh_if_not_exists = self.should_suggest_if_not_exists(line, &position);
 
         if ssh_keyspaces {
             return if in_string {
@@ -1991,6 +2042,10 @@ impl LanguageServer for Backend {
 
         if ssh_from {
             return self.handle_from_completion();
+        }
+
+        if ssh_if_not_exists {
+            return self.handle_if_not_exists();
         }
 
         if ssh_fields {

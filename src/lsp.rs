@@ -495,6 +495,7 @@ impl Backend {
         self.apply_semi_colon(&mut working_vec);
         self.add_spacing_new_lines(&mut working_vec);
         self.add_spacing_after_comma(&mut working_vec);
+        // self.style_format(&mut working_vec);
 
         let idx = working_vec.len() - 1;
 

@@ -1518,6 +1518,10 @@ impl Backend {
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
 
+        if splitted.len() <= 2 && splitted[0].contains(&"update") {
+            return true;
+        }
+
         if splitted.len() >= 2
             && (splitted[splitted.len() - 2].contains(&"insert")
                 || splitted[splitted.len() - 1].contains(&"into"))

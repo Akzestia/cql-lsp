@@ -1595,6 +1595,26 @@ impl Backend {
         false
     }
 
+    fn should_suggest_create_keywords(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let lw = prefix.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() < 1 {
+            return false;
+        }
+
+        if split[0] == "create" && split.len() <= 2 {
+            return true;
+        }
+
+        false
+    }
+
     // -----------------------------[Handlers]-----------------------------
 
     async fn handle_in_string_keyspace_completion(
@@ -1896,6 +1916,292 @@ impl Backend {
         Ok(Some(CompletionResponse::Array(items)))
     }
 
+    fn handle_create_keywords(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let items = vec![
+            CompletionItem {
+                label: "AGGREGATE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("AGGREGATE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "AGGREGATE IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("AGGREGATE IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "aggregate".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("aggregate $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "aggregate if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("aggregate if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "FUNCTION".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("FUNCTION $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "FUNCTION IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("FUNCTION IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "function".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("function $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "function if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("function if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "INDEX".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("INDEX $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "INDEX IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("INDEX IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "index".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("index $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "index if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("index if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "KEYSPACE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("KEYSPACE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "KEYSPACE IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "keyspace".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("keyspace $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "keyspace if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "MATERIALIZED VIEW".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("MATERIALIZED VIEW $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "MATERIALIZED VIEW IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("MATERIALIZED VIEW IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "materialized view".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("materialized view $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "materialized view if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("materialized view if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "ROLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("ROLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "ROLE IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("ROLE IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "role".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("role $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "role if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("role if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "SEARCH INDEX".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("SEARCH INDEX $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "SEARCH INDEX IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("SEARCH INDEX IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "search index".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("search index $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "search index if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("search index if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TABLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TABLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TABLE IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TABLE IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "table".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("table $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "table if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("table if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TYPE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TYPE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TYPE IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TYPE IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "type".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("type $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "type if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("type if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "USER".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("USER $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "USER IF NOT EXISTS".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("USER IF NOT EXISTS $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "user".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("user $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "user if not exists".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("user if not exists $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ];
+
+        Ok(Some(CompletionResponse::Array(items)))
+    }
     // -----------------------------[Helper functions]-----------------------------
 }
 
@@ -2029,6 +2335,7 @@ impl LanguageServer for Backend {
         let ssh_from = self.should_suggest_from(line, &position);
         let ssh_table_completions = self.should_suggest_table_completions(line, &position);
         let ssh_if_not_exists = self.should_suggest_if_not_exists(line, &position);
+        let ssh_create_keywords = self.should_suggest_create_keywords(line, &position);
 
         if ssh_keyspaces {
             return if in_string {
@@ -2038,6 +2345,10 @@ impl LanguageServer for Backend {
                 self.handle_out_of_string_keyspace_completion(line, &position)
                     .await
             };
+        }
+
+        if ssh_create_keywords {
+            return self.handle_create_keywords();
         }
 
         if ssh_from {

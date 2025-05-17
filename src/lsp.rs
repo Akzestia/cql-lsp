@@ -562,7 +562,9 @@ impl Backend {
                 }
             }
 
-            if lines[index].len() == 0 {
+            if lines[index].len() == 0
+                && !self.is_line_in_multiline_comment(&lines[index], index, lines)
+            {
                 last_new_line = true;
             } else {
                 last_new_line = false;
@@ -596,7 +598,10 @@ impl Backend {
                 inside_code_block = false;
             }
 
-            if inside_code_block && line.len() == 0 {
+            if inside_code_block
+                && line.len() == 0
+                && !self.is_line_in_multiline_comment(&line, index, lines)
+            {
                 lines.remove(index);
                 if index >= 2 {
                     index -= 2;

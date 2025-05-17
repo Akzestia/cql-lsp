@@ -1581,7 +1581,7 @@ impl Backend {
 
         let items = cqlsh::query_g_fields(&self.config)
             .await
-            .unwrap_or_else(|e| vec![]);
+            .unwrap_or_else(|_| vec![]);
 
         let mut result: Vec<CompletionItem> = Vec::new();
 
@@ -1719,11 +1719,11 @@ impl Backend {
         if let Some(keyspace) = self.latest_keyspace(&position).await {
             let tables = cqlsh::query_keyspace_scoped_tables(&self.config, &keyspace)
                 .await
-                .unwrap_or_else(|e| vec![]);
+                .unwrap_or_else(|_| vec![]);
 
             let tables_unscoped = cqlsh::query_g_tables(&self.config)
                 .await
-                .unwrap_or_else(|e| vec![]);
+                .unwrap_or_else(|_| vec![]);
 
             let mut items = Vec::<CompletionItem>::new();
 
@@ -1755,7 +1755,7 @@ impl Backend {
 
         let tables = cqlsh::query_g_tables(&self.config)
             .await
-            .unwrap_or_else(|e| vec![]);
+            .unwrap_or_else(|_| vec![]);
 
         let mut items = Vec::<CompletionItem>::new();
 
@@ -2076,7 +2076,7 @@ impl Backend {
         if let Some(response) = self
             .get_fields(line, position)
             .await
-            .unwrap_or_else(|e| Some(CompletionResponse::Array(vec![])))
+            .unwrap_or_else(|_| Some(CompletionResponse::Array(vec![])))
         {
             return Ok(Some(response));
         }
@@ -2114,7 +2114,7 @@ impl Backend {
         if let Some(tables) = self
             .get_table_completions(position)
             .await
-            .unwrap_or_else(|e| Some(CompletionResponse::Array(vec![])))
+            .unwrap_or_else(|_| Some(CompletionResponse::Array(vec![])))
         {
             return Ok(Some(tables));
         }
@@ -2884,7 +2884,7 @@ impl LanguageServer for Backend {
             let lines: Vec<&str> = current_doc.split('\n').collect();
             let mut pos = 0;
 
-            for n in 0..lines.len() {
+            for _ in 0..lines.len() {
                 pos += 1;
             }
 
@@ -2904,7 +2904,6 @@ impl LanguageServer for Backend {
         Ok(())
     }
 
-    // Fixed document not being updated on change
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
         let changes = &params.content_changes;

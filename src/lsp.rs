@@ -77,6 +77,270 @@ impl Backend {
         in_double_quotes || in_single_quotes
     }
 
+    fn line_contains_cql_kw(&self, line: &str) -> bool {
+        let lw = line.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        for kw in split {
+            if CQL_KEYWORDS_LWC.contains(&kw.to_string()) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn is_line_inside_selectors(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
+        if self.line_contains_cql_kw(line) || line.contains(&";") || line.len() == 0 {
+            return false;
+        }
+
+        if index == 0 || index == lines.len() - 1 {
+            return false;
+        }
+
+        let lw = line.to_lowercase();
+
+        if lw.contains(&"values") || lw.contains(&"from") {
+            return false;
+        }
+
+        let mut index_up = index - 1;
+        let mut index_down = index + 1;
+
+        let mut top_bracket = false;
+        let mut bottom_bracket = false;
+
+        while index_up > 0 {
+            let up_line = &lines[index_up].to_lowercase();
+            if !top_bracket && up_line.contains(&"select") {
+                top_bracket = true;
+            }
+            if !top_bracket {
+                index_up -= 1;
+            } else {
+                break;
+            }
+        }
+
+        let up_line = &lines[index_up].to_lowercase();
+        if !top_bracket && up_line.contains(&"select") {
+            top_bracket = true;
+        }
+
+        while index_down < lines.len() {
+            let down_line = &lines[index_down].to_lowercase();
+            if !bottom_bracket && down_line.contains(&"from") {
+                bottom_bracket = true;
+            }
+
+            if !bottom_bracket && down_line.contains(&";") {
+                return false;
+            }
+            if !bottom_bracket {
+                index_down += 1;
+            } else {
+                break;
+            }
+        }
+
+        if top_bracket && bottom_bracket {
+            return true;
+        }
+
+        false
+    }
+
+    fn is_multi_line_comment_clause(&self, line: &str) -> bool {
+        if line.contains(&"/*") || line.contains("*/") {
+            return true;
+        }
+        false
+    }
+
+    // Excluding /* && */
+    fn is_line_in_multiline_comment(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
+        if index == 0 || index == lines.len() - 1 || line.contains(&"/*") || line.contains(&"*/") {
+            return false;
+        }
+
+        let mut up_index = index - 1;
+        let mut down_index = index + 1;
+
+        let mut top_line = false;
+        let mut bottom_line = false;
+
+        while up_index > 0 {
+            if !top_line && lines[up_index].contains(&"/*") {
+                top_line = true;
+            }
+
+            if !top_line && lines[up_index].contains(&"*/") {
+                return false;
+            }
+
+            if top_line {
+                break;
+            }
+            up_index -= 1;
+        }
+
+        if !top_line && lines[up_index].contains(&"/*") {
+            top_line = true;
+        }
+
+        if !top_line && lines[up_index].contains(&"*/") {
+            return false;
+        }
+
+        while down_index < lines.len() {
+            if !bottom_line && lines[down_index].contains(&"*/") {
+                bottom_line = true;
+            }
+
+            if !bottom_line && lines[down_index].contains(&"/*") {
+                return false;
+            }
+
+            if bottom_line {
+                break;
+            }
+
+            down_index += 1;
+        }
+
+        if top_line && bottom_line {
+            return true;
+        }
+
+        false
+    }
+
+    fn is_line_inside_init_args(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
+        if self.line_contains_cql_kw(line)
+            || line.contains(&";")
+            || line.contains(&"{")
+            || line.contains(&"}")
+            || line.contains(&"(")
+            || line.contains(&")")
+        {
+            return false;
+        }
+
+        if index == 0 || index == lines.len() - 1 {
+            return false;
+        }
+
+        let lw = line.to_lowercase();
+
+        if lw.contains(&"values") || lw.contains(&"from") {
+            return false;
+        }
+
+        let mut index_up = index - 1;
+        let mut index_down = index + 1;
+
+        let mut top_bracket = false;
+        let mut bottom_bracket = false;
+
+        while index_up > 0 {
+            let up_line = &lines[index_up];
+            if !top_bracket && (up_line.contains(&"{") || up_line.contains(&"(")) {
+                top_bracket = true;
+            }
+
+            if !top_bracket && (up_line.contains(&"}") || up_line.contains(&")")) {
+                return false;
+            }
+
+            if !top_bracket && self.line_contains_cql_kw(up_line) {
+                return false;
+            }
+
+            if top_bracket {
+                break;
+            }
+
+            index_up -= 1;
+        }
+
+        let up_line = &lines[index_up];
+        if !top_bracket && (up_line.contains(&"{") || up_line.contains(&"(")) {
+            top_bracket = true;
+        }
+
+        if !top_bracket && (up_line.contains(&"}") || up_line.contains(&")")) {
+            return false;
+        }
+
+        if !top_bracket && self.line_contains_cql_kw(up_line) {
+            return false;
+        }
+
+        while index_down < lines.len() {
+            let down_line = &lines[index_down];
+
+            if !bottom_bracket && (down_line.contains(&"}") || down_line.contains(&")")) {
+                bottom_bracket = true;
+            }
+
+            if !bottom_bracket && (down_line.contains(&"{") || down_line.contains(&"(")) {
+                return false;
+            }
+
+            if !bottom_bracket && down_line.contains(&";") {
+                return false;
+            }
+
+            if !bottom_bracket && self.line_contains_cql_kw(down_line) {
+                return false;
+            }
+
+            if bottom_bracket {
+                break;
+            }
+            index_down += 1;
+        }
+
+        if top_bracket && bottom_bracket {
+            return true;
+        }
+
+        false
+    }
+
+    fn is_string_literal(&self, line: &str) -> bool {
+        let mut met_v1_op_bracket = false;
+        let mut met_v2_op_bracket = false;
+
+        for char in line.chars() {
+            if met_v1_op_bracket && char == '\'' {
+                return true;
+            }
+
+            if met_v2_op_bracket && char == '"' {
+                return true;
+            }
+
+            if !met_v1_op_bracket && char == '\'' {
+                met_v1_op_bracket = true;
+            }
+            if !met_v2_op_bracket && char == '"' {
+                met_v2_op_bracket = true;
+            }
+
+            if met_v1_op_bracket && char == '"' {
+                return false;
+            }
+
+            if met_v2_op_bracket && char == '\'' {
+                return false;
+            }
+        }
+
+        false
+    }
+
     // -----------------------------[Formatting]-----------------------------
 
     fn remove_leading_spaces_wildcards(&self, line: &mut String) {
@@ -149,36 +413,26 @@ impl Backend {
         }
     }
 
-    fn is_string_literal(&self, line: &str) -> bool {
-        let mut met_v1_op_bracket = false;
-        let mut met_v2_op_bracket = false;
+    fn add_tabs_to_args(&self, lines: &mut Vec<String>) {
+        let mut indices = Vec::<usize>::new();
 
-        for char in line.chars() {
-            if met_v1_op_bracket && char == '\'' {
-                return true;
-            }
+        for line in lines.iter().enumerate() {
+            let is_comment = self.is_line_in_multiline_comment(line.1, line.0, lines);
+            let is_arg = self.is_line_inside_init_args(line.1, line.0, lines);
+            let is_selector = self.is_line_inside_selectors(line.1, line.0, lines);
+            let is_ml_comment_clause = self.is_multi_line_comment_clause(line.1);
 
-            if met_v2_op_bracket && char == '"' {
-                return true;
-            }
-
-            if !met_v1_op_bracket && char == '\'' {
-                met_v1_op_bracket = true;
-            }
-            if !met_v2_op_bracket && char == '"' {
-                met_v2_op_bracket = true;
-            }
-
-            if met_v1_op_bracket && char == '"' {
-                return false;
-            }
-
-            if met_v2_op_bracket && char == '\'' {
-                return false;
+            if is_comment
+                || (is_arg && !is_comment && !is_ml_comment_clause)
+                || (is_selector && !is_comment && !is_ml_comment_clause)
+            {
+                indices.push(line.0);
             }
         }
 
-        false
+        for x in indices {
+            lines[x].insert_str(0, "    ");
+        }
     }
 
     fn fix_string_literals(&self, lines: &mut Vec<String>) {
@@ -308,7 +562,9 @@ impl Backend {
                 }
             }
 
-            if lines[index].len() == 0 {
+            if lines[index].len() == 0
+                && !self.is_line_in_multiline_comment(&lines[index], index, lines)
+            {
                 last_new_line = true;
             } else {
                 last_new_line = false;
@@ -342,7 +598,10 @@ impl Backend {
                 inside_code_block = false;
             }
 
-            if inside_code_block && line.len() == 0 {
+            if inside_code_block
+                && line.len() == 0
+                && !self.is_line_in_multiline_comment(&line, index, lines)
+            {
                 lines.remove(index);
                 if index >= 2 {
                     index -= 2;
@@ -371,6 +630,10 @@ impl Backend {
                 && line.len() > 0
                 && !line.contains(&";")
                 && !line.contains(&"begin")
+                && !line.contains(&"//")
+                && !line.contains(&"/*")
+                && !line.contains(&"*/")
+                && !self.is_line_in_multiline_comment(&line, index, lines)
             {
                 let lw = lines[index + 1].to_lowercase();
                 let split: Vec<&str> = lw.split(' ').collect();
@@ -381,7 +644,11 @@ impl Backend {
                 }
             }
 
-            if index == lines.len() - 1 && line.len() > 0 && !line.contains(&";") {
+            if index == lines.len() - 1
+                && line.len() > 0
+                && !line.contains(&";")
+                && !self.is_line_in_multiline_comment(&line, index, lines)
+            {
                 lines[index].push(';');
             }
 
@@ -495,7 +762,8 @@ impl Backend {
         self.apply_semi_colon(&mut working_vec);
         self.add_spacing_new_lines(&mut working_vec);
         self.add_spacing_after_comma(&mut working_vec);
-        // self.style_format(&mut working_vec);
+        // self.format_selectors(&mut working_vec);
+        self.add_tabs_to_args(&mut working_vec);
 
         let idx = working_vec.len() - 1;
 
@@ -580,7 +848,7 @@ impl Backend {
 
         match items {
             Ok(r) => r.into_iter().collect(),
-            Err(e) => {
+            Err(_) => {
                 vec![]
             }
         }
@@ -602,6 +870,16 @@ impl Backend {
         let mut index: usize = 0;
         let mut met_bracket = false;
 
+        let trimmed_prefix = prefix.trim_end().to_lowercase();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        if split.len() >= 2
+            && (split[split.len() - 2].contains(&"drop")
+                && split[split.len() - 1].contains(&"keyspace"))
+        {
+            return true;
+        }
+
         while index < position.character as usize {
             if met_bracket
                 && (line.chars().nth(index).unwrap_or_else(|| '_') == '"'
@@ -618,9 +896,6 @@ impl Backend {
             }
             index += 1;
         }
-
-        let trimmed_prefix = prefix.trim_end().to_lowercase();
-        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
 
         if !split.contains(&"use") {
             return false;
@@ -1044,7 +1319,7 @@ impl Backend {
 
                 if self.is_use_keyspace_line(str) {
                     let istr: Vec<char> = str.trim().chars().collect();
-                    let trimeed = str.replace(' ', "");
+
                     let extracted_ksp = String::from_iter(&istr[5..istr.len() - 2]);
                     keyspace_latest = extracted_ksp.clone();
                 }
@@ -1097,12 +1372,7 @@ impl Backend {
         0
     }
 
-    fn column_to_text_edit(
-        &self,
-        line: &str,
-        column: &Column,
-        lates_keyspace: Option<&str>,
-    ) -> String {
+    fn column_to_text_edit(&self, column: &Column, lates_keyspace: Option<&str>) -> String {
         let mut result_str: String;
 
         if let Some(keyspace) = lates_keyspace {
@@ -1163,8 +1433,7 @@ impl Backend {
                                     continue;
                                 }
 
-                                let text_edit_str =
-                                    self.column_to_text_edit(line, &item, Some(&ksp));
+                                let text_edit_str = self.column_to_text_edit(&item, Some(&ksp));
 
                                 let text_edit = TextEdit {
                                     range: Range {
@@ -1247,7 +1516,7 @@ impl Backend {
                     if lw_line.contains(&item.column_name.to_lowercase()) {
                         continue;
                     }
-                    let text_edit_str = self.column_to_text_edit(line, &item, Some(&keyspace));
+                    let text_edit_str = self.column_to_text_edit(&item, Some(&keyspace));
 
                     let text_edit = TextEdit {
                         range: Range {
@@ -1312,7 +1581,7 @@ impl Backend {
 
         let items = cqlsh::query_g_fields(&self.config)
             .await
-            .unwrap_or_else(|e| vec![]);
+            .unwrap_or_else(|_| vec![]);
 
         let mut result: Vec<CompletionItem> = Vec::new();
 
@@ -1321,7 +1590,7 @@ impl Backend {
                 if lw_line.contains(&item.column_name.to_lowercase()) {
                     continue;
                 }
-                let text_edit_str = self.column_to_text_edit(line, &item, None);
+                let text_edit_str = self.column_to_text_edit(&item, None);
 
                 let text_edit = TextEdit {
                     range: Range {
@@ -1450,11 +1719,11 @@ impl Backend {
         if let Some(keyspace) = self.latest_keyspace(&position).await {
             let tables = cqlsh::query_keyspace_scoped_tables(&self.config, &keyspace)
                 .await
-                .unwrap_or_else(|e| vec![]);
+                .unwrap_or_else(|_| vec![]);
 
             let tables_unscoped = cqlsh::query_g_tables(&self.config)
                 .await
-                .unwrap_or_else(|e| vec![]);
+                .unwrap_or_else(|_| vec![]);
 
             let mut items = Vec::<CompletionItem>::new();
 
@@ -1486,7 +1755,7 @@ impl Backend {
 
         let tables = cqlsh::query_g_tables(&self.config)
             .await
-            .unwrap_or_else(|e| vec![]);
+            .unwrap_or_else(|_| vec![]);
 
         let mut items = Vec::<CompletionItem>::new();
 
@@ -1525,6 +1794,13 @@ impl Backend {
         if splitted.len() >= 2
             && (splitted[splitted.len() - 2].contains(&"insert")
                 || splitted[splitted.len() - 1].contains(&"into"))
+        {
+            return true;
+        }
+
+        if splitted.len() >= 2
+            && (splitted[splitted.len() - 2].contains(&"drop")
+                && splitted[splitted.len() - 1].contains(&"table"))
         {
             return true;
         }
@@ -1612,6 +1888,50 @@ impl Backend {
             return true;
         }
 
+        false
+    }
+
+    fn should_suggest_alter_keywords(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let lw = prefix.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() < 1 {
+            return false;
+        }
+
+        if split[0] == "alter" && split.len() <= 2 {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_suggest_drop_keywords(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let lw = prefix.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() < 1 {
+            return false;
+        }
+
+        if split[0] == "drop" && split.len() <= 2 {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_edit_select_statement(&self, line: &str, lines: &Vec<String>) -> bool {
         false
     }
 
@@ -1756,7 +2076,7 @@ impl Backend {
         if let Some(response) = self
             .get_fields(line, position)
             .await
-            .unwrap_or_else(|e| Some(CompletionResponse::Array(vec![])))
+            .unwrap_or_else(|_| Some(CompletionResponse::Array(vec![])))
         {
             return Ok(Some(response));
         }
@@ -1794,7 +2114,7 @@ impl Backend {
         if let Some(tables) = self
             .get_table_completions(position)
             .await
-            .unwrap_or_else(|e| Some(CompletionResponse::Array(vec![])))
+            .unwrap_or_else(|_| Some(CompletionResponse::Array(vec![])))
         {
             return Ok(Some(tables));
         }
@@ -2012,7 +2332,7 @@ impl Backend {
             CompletionItem {
                 label: "KEYSPACE IF NOT EXISTS".to_string(),
                 kind: Some(CompletionItemKind::KEYWORD),
-                insert_text: Some("IF NOT EXISTS $0".to_string()),
+                insert_text: Some("KEYSPACE IF NOT EXISTS $0".to_string()),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 ..Default::default()
             },
@@ -2026,7 +2346,7 @@ impl Backend {
             CompletionItem {
                 label: "keyspace if not exists".to_string(),
                 kind: Some(CompletionItemKind::KEYWORD),
-                insert_text: Some("if not exists $0".to_string()),
+                insert_text: Some("keyspace if not exists $0".to_string()),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 ..Default::default()
             },
@@ -2202,7 +2522,328 @@ impl Backend {
 
         Ok(Some(CompletionResponse::Array(items)))
     }
-    // -----------------------------[Helper functions]-----------------------------
+
+    fn handle_alter_keywords(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let items = vec![
+            CompletionItem {
+                label: "KEYSPACE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("KEYSPACE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "KEYSPACE WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("KEYSPACE WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "keyspace".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("keyspace $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "keyspace with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("keyspace with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "MATERIALIZED VIEW".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("MATERIALIZED VIEW $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "MATERIALIZED VIEW WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("MATERIALIZED VIEW WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "materialized view".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("materialized view $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "materialized view with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("materialized view with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "ROLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("ROLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "ROLE WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("ROLE WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "role".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("role $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "role with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("role with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TABLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TABLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TABLE WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TABLE WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "table".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("table $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "table with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("table with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TYPE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TYPE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TYPE WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TYPE WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "type".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("type $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "type with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("type with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "USER".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("USER $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "USER WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("USER WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "user".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("user $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "user with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("user with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ];
+
+        Ok(Some(CompletionResponse::Array(items)))
+    }
+
+    fn handle_drop_keywords(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let items = vec![
+            CompletionItem {
+                label: "AGGREGATE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("AGGREGATE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "aggregate".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("aggregate $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "FUNCTION".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("FUNCTION $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "function".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("function $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "INDEX".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("INDEX $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "index".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("index $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "KEYSPACE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("KEYSPACE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "keyspace".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("keyspace $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "MATERIALIZED VIEW".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("MATERIALIZED VIEW $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "materialized view".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("materialized view $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "ROLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("ROLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "role".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("role $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "SEARCH INDEX".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("SEARCH INDEX $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "search index".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("search index $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TABLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TABLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "table".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("table $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TYPE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TYPE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "type".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("type $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "USER".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("USER $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "user".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("user $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ];
+
+        Ok(Some(CompletionResponse::Array(items)))
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -2243,7 +2884,7 @@ impl LanguageServer for Backend {
             let lines: Vec<&str> = current_doc.split('\n').collect();
             let mut pos = 0;
 
-            for n in 0..lines.len() {
+            for _ in 0..lines.len() {
                 pos += 1;
             }
 
@@ -2263,7 +2904,6 @@ impl LanguageServer for Backend {
         Ok(())
     }
 
-    // Fixed document not being updated on change
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
         let changes = &params.content_changes;
@@ -2329,13 +2969,14 @@ impl LanguageServer for Backend {
         let in_string = Self::is_in_string_literal(line, position.character);
         let ssh_keyspaces = self.should_suggest_keyspaces(line, &position);
         let ssh_graph_types = self.should_suggest_graph_engine_types(line, &position);
-        let ssh_command_sequence = self.should_suggest_command_sequence(line, &position);
+        // let ssh_command_sequence = self.should_suggest_command_sequence(line, &position);
         let ssh_keywords = self.should_suggest_keywords(line, &position).await;
         let ssh_fields = self.should_suggest_fields(line, &position);
         let ssh_from = self.should_suggest_from(line, &position);
         let ssh_table_completions = self.should_suggest_table_completions(line, &position);
         let ssh_if_not_exists = self.should_suggest_if_not_exists(line, &position);
         let ssh_create_keywords = self.should_suggest_create_keywords(line, &position);
+        let ssh_alter_keywords = self.should_suggest_alter_keywords(line, &position);
 
         if ssh_keyspaces {
             return if in_string {
@@ -2349,6 +2990,10 @@ impl LanguageServer for Backend {
 
         if ssh_create_keywords {
             return self.handle_create_keywords();
+        }
+
+        if ssh_alter_keywords {
+            return self.handle_alter_keywords();
         }
 
         if ssh_from {

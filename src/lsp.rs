@@ -1372,12 +1372,7 @@ impl Backend {
         0
     }
 
-    fn column_to_text_edit(
-        &self,
-        line: &str,
-        column: &Column,
-        lates_keyspace: Option<&str>,
-    ) -> String {
+    fn column_to_text_edit(&self, column: &Column, lates_keyspace: Option<&str>) -> String {
         let mut result_str: String;
 
         if let Some(keyspace) = lates_keyspace {
@@ -1438,8 +1433,7 @@ impl Backend {
                                     continue;
                                 }
 
-                                let text_edit_str =
-                                    self.column_to_text_edit(line, &item, Some(&ksp));
+                                let text_edit_str = self.column_to_text_edit(&item, Some(&ksp));
 
                                 let text_edit = TextEdit {
                                     range: Range {
@@ -1522,7 +1516,7 @@ impl Backend {
                     if lw_line.contains(&item.column_name.to_lowercase()) {
                         continue;
                     }
-                    let text_edit_str = self.column_to_text_edit(line, &item, Some(&keyspace));
+                    let text_edit_str = self.column_to_text_edit(&item, Some(&keyspace));
 
                     let text_edit = TextEdit {
                         range: Range {
@@ -1596,7 +1590,7 @@ impl Backend {
                 if lw_line.contains(&item.column_name.to_lowercase()) {
                     continue;
                 }
-                let text_edit_str = self.column_to_text_edit(line, &item, None);
+                let text_edit_str = self.column_to_text_edit(&item, None);
 
                 let text_edit = TextEdit {
                     range: Range {

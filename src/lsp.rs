@@ -371,6 +371,10 @@ impl Backend {
                 && line.len() > 0
                 && !line.contains(&";")
                 && !line.contains(&"begin")
+                && !line.contains(&"//")
+                && !line.contains(&"/*")
+                && !line.contains(&"*/")
+                && !self.is_line_in_multiline_comment(&line, index, lines)
             {
                 let lw = lines[index + 1].to_lowercase();
                 let split: Vec<&str> = lw.split(' ').collect();
@@ -381,7 +385,11 @@ impl Backend {
                 }
             }
 
-            if index == lines.len() - 1 && line.len() > 0 && !line.contains(&";") {
+            if index == lines.len() - 1
+                && line.len() > 0
+                && !line.contains(&";")
+                && !self.is_line_in_multiline_comment(&line, index, lines)
+            {
                 lines[index].push(';');
             }
 
@@ -580,7 +588,7 @@ impl Backend {
 
         match items {
             Ok(r) => r.into_iter().collect(),
-            Err(e) => {
+            Err(_) => {
                 vec![]
             }
         }

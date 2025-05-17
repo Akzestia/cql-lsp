@@ -2332,7 +2332,7 @@ impl Backend {
             CompletionItem {
                 label: "KEYSPACE IF NOT EXISTS".to_string(),
                 kind: Some(CompletionItemKind::KEYWORD),
-                insert_text: Some("IF NOT EXISTS $0".to_string()),
+                insert_text: Some("KEYSPACE IF NOT EXISTS $0".to_string()),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 ..Default::default()
             },
@@ -2346,7 +2346,7 @@ impl Backend {
             CompletionItem {
                 label: "keyspace if not exists".to_string(),
                 kind: Some(CompletionItemKind::KEYWORD),
-                insert_text: Some("if not exists $0".to_string()),
+                insert_text: Some("keyspace if not exists $0".to_string()),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 ..Default::default()
             },

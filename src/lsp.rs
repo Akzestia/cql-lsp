@@ -77,6 +77,270 @@ impl Backend {
         in_double_quotes || in_single_quotes
     }
 
+    fn line_contains_cql_kw(&self, line: &str) -> bool {
+        let lw = line.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        for kw in split {
+            if CQL_KEYWORDS_LWC.contains(&kw.to_string()) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn is_line_inside_selectors(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
+        if self.line_contains_cql_kw(line) || line.contains(&";") || line.len() == 0 {
+            return false;
+        }
+
+        if index == 0 || index == lines.len() - 1 {
+            return false;
+        }
+
+        let lw = line.to_lowercase();
+
+        if lw.contains(&"values") || lw.contains(&"from") {
+            return false;
+        }
+
+        let mut index_up = index - 1;
+        let mut index_down = index + 1;
+
+        let mut top_bracket = false;
+        let mut bottom_bracket = false;
+
+        while index_up > 0 {
+            let up_line = &lines[index_up].to_lowercase();
+            if !top_bracket && up_line.contains(&"select") {
+                top_bracket = true;
+            }
+            if !top_bracket {
+                index_up -= 1;
+            } else {
+                break;
+            }
+        }
+
+        let up_line = &lines[index_up].to_lowercase();
+        if !top_bracket && up_line.contains(&"select") {
+            top_bracket = true;
+        }
+
+        while index_down < lines.len() {
+            let down_line = &lines[index_down].to_lowercase();
+            if !bottom_bracket && down_line.contains(&"from") {
+                bottom_bracket = true;
+            }
+
+            if !bottom_bracket && down_line.contains(&";") {
+                return false;
+            }
+            if !bottom_bracket {
+                index_down += 1;
+            } else {
+                break;
+            }
+        }
+
+        if top_bracket && bottom_bracket {
+            return true;
+        }
+
+        false
+    }
+
+    fn is_multi_line_comment_clause(&self, line: &str) -> bool {
+        if line.contains(&"/*") || line.contains("*/") {
+            return true;
+        }
+        false
+    }
+
+    // Excluding /* && */
+    fn is_line_in_multiline_comment(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
+        if index == 0 || index == lines.len() - 1 || line.contains(&"/*") || line.contains(&"*/") {
+            return false;
+        }
+
+        let mut up_index = index - 1;
+        let mut down_index = index + 1;
+
+        let mut top_line = false;
+        let mut bottom_line = false;
+
+        while up_index > 0 {
+            if !top_line && lines[up_index].contains(&"/*") {
+                top_line = true;
+            }
+
+            if !top_line && lines[up_index].contains(&"*/") {
+                return false;
+            }
+
+            if top_line {
+                break;
+            }
+            up_index -= 1;
+        }
+
+        if !top_line && lines[up_index].contains(&"/*") {
+            top_line = true;
+        }
+
+        if !top_line && lines[up_index].contains(&"*/") {
+            return false;
+        }
+
+        while down_index < lines.len() {
+            if !bottom_line && lines[down_index].contains(&"*/") {
+                bottom_line = true;
+            }
+
+            if !bottom_line && lines[down_index].contains(&"/*") {
+                return false;
+            }
+
+            if bottom_line {
+                break;
+            }
+
+            down_index += 1;
+        }
+
+        if top_line && bottom_line {
+            return true;
+        }
+
+        false
+    }
+
+    fn is_line_inside_init_args(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
+        if self.line_contains_cql_kw(line)
+            || line.contains(&";")
+            || line.contains(&"{")
+            || line.contains(&"}")
+            || line.contains(&"(")
+            || line.contains(&")")
+        {
+            return false;
+        }
+
+        if index == 0 || index == lines.len() - 1 {
+            return false;
+        }
+
+        let lw = line.to_lowercase();
+
+        if lw.contains(&"values") || lw.contains(&"from") {
+            return false;
+        }
+
+        let mut index_up = index - 1;
+        let mut index_down = index + 1;
+
+        let mut top_bracket = false;
+        let mut bottom_bracket = false;
+
+        while index_up > 0 {
+            let up_line = &lines[index_up];
+            if !top_bracket && (up_line.contains(&"{") || up_line.contains(&"(")) {
+                top_bracket = true;
+            }
+
+            if !top_bracket && (up_line.contains(&"}") || up_line.contains(&")")) {
+                return false;
+            }
+
+            if !top_bracket && self.line_contains_cql_kw(up_line) {
+                return false;
+            }
+
+            if top_bracket {
+                break;
+            }
+
+            index_up -= 1;
+        }
+
+        let up_line = &lines[index_up];
+        if !top_bracket && (up_line.contains(&"{") || up_line.contains(&"(")) {
+            top_bracket = true;
+        }
+
+        if !top_bracket && (up_line.contains(&"}") || up_line.contains(&")")) {
+            return false;
+        }
+
+        if !top_bracket && self.line_contains_cql_kw(up_line) {
+            return false;
+        }
+
+        while index_down < lines.len() {
+            let down_line = &lines[index_down];
+
+            if !bottom_bracket && (down_line.contains(&"}") || down_line.contains(&")")) {
+                bottom_bracket = true;
+            }
+
+            if !bottom_bracket && (down_line.contains(&"{") || down_line.contains(&"(")) {
+                return false;
+            }
+
+            if !bottom_bracket && down_line.contains(&";") {
+                return false;
+            }
+
+            if !bottom_bracket && self.line_contains_cql_kw(down_line) {
+                return false;
+            }
+
+            if bottom_bracket {
+                break;
+            }
+            index_down += 1;
+        }
+
+        if top_bracket && bottom_bracket {
+            return true;
+        }
+
+        false
+    }
+
+    fn is_string_literal(&self, line: &str) -> bool {
+        let mut met_v1_op_bracket = false;
+        let mut met_v2_op_bracket = false;
+
+        for char in line.chars() {
+            if met_v1_op_bracket && char == '\'' {
+                return true;
+            }
+
+            if met_v2_op_bracket && char == '"' {
+                return true;
+            }
+
+            if !met_v1_op_bracket && char == '\'' {
+                met_v1_op_bracket = true;
+            }
+            if !met_v2_op_bracket && char == '"' {
+                met_v2_op_bracket = true;
+            }
+
+            if met_v1_op_bracket && char == '"' {
+                return false;
+            }
+
+            if met_v2_op_bracket && char == '\'' {
+                return false;
+            }
+        }
+
+        false
+    }
+
     // -----------------------------[Formatting]-----------------------------
 
     fn remove_leading_spaces_wildcards(&self, line: &mut String) {
@@ -149,36 +413,26 @@ impl Backend {
         }
     }
 
-    fn is_string_literal(&self, line: &str) -> bool {
-        let mut met_v1_op_bracket = false;
-        let mut met_v2_op_bracket = false;
+    fn add_tabs_to_args(&self, lines: &mut Vec<String>) {
+        let mut indices = Vec::<usize>::new();
 
-        for char in line.chars() {
-            if met_v1_op_bracket && char == '\'' {
-                return true;
-            }
+        for line in lines.iter().enumerate() {
+            let is_comment = self.is_line_in_multiline_comment(line.1, line.0, lines);
+            let is_arg = self.is_line_inside_init_args(line.1, line.0, lines);
+            let is_selector = self.is_line_inside_selectors(line.1, line.0, lines);
+            let is_ml_comment_clause = self.is_multi_line_comment_clause(line.1);
 
-            if met_v2_op_bracket && char == '"' {
-                return true;
-            }
-
-            if !met_v1_op_bracket && char == '\'' {
-                met_v1_op_bracket = true;
-            }
-            if !met_v2_op_bracket && char == '"' {
-                met_v2_op_bracket = true;
-            }
-
-            if met_v1_op_bracket && char == '"' {
-                return false;
-            }
-
-            if met_v2_op_bracket && char == '\'' {
-                return false;
+            if is_comment
+                || (is_arg && !is_comment && !is_ml_comment_clause)
+                || (is_selector && !is_comment && !is_ml_comment_clause)
+            {
+                indices.push(line.0);
             }
         }
 
-        false
+        for x in indices {
+            lines[x].insert_str(0, "    ");
+        }
     }
 
     fn fix_string_literals(&self, lines: &mut Vec<String>) {
@@ -503,7 +757,8 @@ impl Backend {
         self.apply_semi_colon(&mut working_vec);
         self.add_spacing_new_lines(&mut working_vec);
         self.add_spacing_after_comma(&mut working_vec);
-        // self.style_format(&mut working_vec);
+        // self.format_selectors(&mut working_vec);
+        self.add_tabs_to_args(&mut working_vec);
 
         let idx = working_vec.len() - 1;
 

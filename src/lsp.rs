@@ -870,6 +870,16 @@ impl Backend {
         let mut index: usize = 0;
         let mut met_bracket = false;
 
+        let trimmed_prefix = prefix.trim_end().to_lowercase();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        if split.len() >= 2
+            && (split[split.len() - 2].contains(&"drop")
+                && split[split.len() - 1].contains(&"keyspace"))
+        {
+            return true;
+        }
+
         while index < position.character as usize {
             if met_bracket
                 && (line.chars().nth(index).unwrap_or_else(|| '_') == '"'
@@ -886,9 +896,6 @@ impl Backend {
             }
             index += 1;
         }
-
-        let trimmed_prefix = prefix.trim_end().to_lowercase();
-        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
 
         if !split.contains(&"use") {
             return false;
@@ -1312,7 +1319,7 @@ impl Backend {
 
                 if self.is_use_keyspace_line(str) {
                     let istr: Vec<char> = str.trim().chars().collect();
-                    let trimeed = str.replace(' ', "");
+
                     let extracted_ksp = String::from_iter(&istr[5..istr.len() - 2]);
                     keyspace_latest = extracted_ksp.clone();
                 }
@@ -1797,6 +1804,13 @@ impl Backend {
             return true;
         }
 
+        if splitted.len() >= 2
+            && (splitted[splitted.len() - 2].contains(&"drop")
+                && splitted[splitted.len() - 1].contains(&"table"))
+        {
+            return true;
+        }
+
         if splitted.len() >= 3
             && ((splitted[splitted.len() - 2].contains(&"insert")
                 || splitted[splitted.len() - 1].contains(&"into"))
@@ -1880,6 +1894,50 @@ impl Backend {
             return true;
         }
 
+        false
+    }
+
+    fn should_suggest_alter_keywords(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let lw = prefix.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() < 1 {
+            return false;
+        }
+
+        if split[0] == "alter" && split.len() <= 2 {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_suggest_drop_keywords(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let lw = prefix.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() < 1 {
+            return false;
+        }
+
+        if split[0] == "drop" && split.len() <= 2 {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_edit_select_statement(&self, line: &str, lines: &Vec<String>) -> bool {
         false
     }
 
@@ -2470,7 +2528,328 @@ impl Backend {
 
         Ok(Some(CompletionResponse::Array(items)))
     }
-    // -----------------------------[Helper functions]-----------------------------
+
+    fn handle_alter_keywords(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let items = vec![
+            CompletionItem {
+                label: "KEYSPACE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("KEYSPACE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "KEYSPACE WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("KEYSPACE WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "keyspace".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("keyspace $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "keyspace with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("keyspace with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "MATERIALIZED VIEW".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("MATERIALIZED VIEW $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "MATERIALIZED VIEW WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("MATERIALIZED VIEW WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "materialized view".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("materialized view $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "materialized view with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("materialized view with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "ROLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("ROLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "ROLE WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("ROLE WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "role".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("role $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "role with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("role with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TABLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TABLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TABLE WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TABLE WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "table".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("table $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "table with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("table with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TYPE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TYPE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TYPE WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TYPE WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "type".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("type $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "type with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("type with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "USER".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("USER $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "USER WITH".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("USER WITH $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "user".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("user $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "user with".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("user with $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ];
+
+        Ok(Some(CompletionResponse::Array(items)))
+    }
+
+    fn handle_drop_keywords(&self) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let items = vec![
+            CompletionItem {
+                label: "AGGREGATE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("AGGREGATE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "aggregate".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("aggregate $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "FUNCTION".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("FUNCTION $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "function".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("function $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "INDEX".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("INDEX $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "index".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("index $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "KEYSPACE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("KEYSPACE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "keyspace".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("keyspace $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "MATERIALIZED VIEW".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("MATERIALIZED VIEW $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "materialized view".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("materialized view $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "ROLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("ROLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "role".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("role $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "SEARCH INDEX".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("SEARCH INDEX $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "search index".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("search index $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TABLE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TABLE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "table".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("table $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "TYPE".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("TYPE $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "type".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("type $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "USER".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("USER $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "user".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                insert_text: Some("user $0".to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ];
+
+        Ok(Some(CompletionResponse::Array(items)))
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -2597,13 +2976,14 @@ impl LanguageServer for Backend {
         let in_string = Self::is_in_string_literal(line, position.character);
         let ssh_keyspaces = self.should_suggest_keyspaces(line, &position);
         let ssh_graph_types = self.should_suggest_graph_engine_types(line, &position);
-        let ssh_command_sequence = self.should_suggest_command_sequence(line, &position);
+        // let ssh_command_sequence = self.should_suggest_command_sequence(line, &position);
         let ssh_keywords = self.should_suggest_keywords(line, &position).await;
         let ssh_fields = self.should_suggest_fields(line, &position);
         let ssh_from = self.should_suggest_from(line, &position);
         let ssh_table_completions = self.should_suggest_table_completions(line, &position);
         let ssh_if_not_exists = self.should_suggest_if_not_exists(line, &position);
         let ssh_create_keywords = self.should_suggest_create_keywords(line, &position);
+        let ssh_alter_keywords = self.should_suggest_alter_keywords(line, &position);
 
         if ssh_keyspaces {
             return if in_string {
@@ -2617,6 +2997,10 @@ impl LanguageServer for Backend {
 
         if ssh_create_keywords {
             return self.handle_create_keywords();
+        }
+
+        if ssh_alter_keywords {
+            return self.handle_alter_keywords();
         }
 
         if ssh_from {

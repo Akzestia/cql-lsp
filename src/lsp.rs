@@ -83,7 +83,7 @@ impl Backend {
 
         for kw in split {
             if CQL_KEYWORDS_LWC.contains(&kw.to_string()) {
-                return true;
+                return false;
             }
         }
 
@@ -91,7 +91,7 @@ impl Backend {
     }
 
     fn is_line_inside_selectors(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
-        if self.line_contains_cql_kw(line) || line.contains(&";") || line.len() == 0 {
+        if self.line_contains_cql_kw(line) || line.contains(";") || line.len() == 0 {
             return false;
         }
 
@@ -101,7 +101,7 @@ impl Backend {
 
         let lw = line.to_lowercase();
 
-        if lw.contains(&"values") || lw.contains(&"from") {
+        if lw.contains("values") || lw.contains("from") {
             return false;
         }
 
@@ -113,7 +113,7 @@ impl Backend {
 
         while index_up > 0 {
             let up_line = &lines[index_up].to_lowercase();
-            if !top_bracket && up_line.contains(&"select") {
+            if !top_bracket && up_line.contains("select") {
                 top_bracket = true;
             }
             if !top_bracket {
@@ -124,17 +124,17 @@ impl Backend {
         }
 
         let up_line = &lines[index_up].to_lowercase();
-        if !top_bracket && up_line.contains(&"select") {
+        if !top_bracket && up_line.contains("select") {
             top_bracket = true;
         }
 
         while index_down < lines.len() {
             let down_line = &lines[index_down].to_lowercase();
-            if !bottom_bracket && down_line.contains(&"from") {
+            if !bottom_bracket && down_line.contains("from") {
                 bottom_bracket = true;
             }
 
-            if !bottom_bracket && down_line.contains(&";") {
+            if !bottom_bracket && down_line.contains(";") {
                 return false;
             }
             if !bottom_bracket {
@@ -152,15 +152,19 @@ impl Backend {
     }
 
     fn is_multi_line_comment_clause(&self, line: &str) -> bool {
-        if line.contains(&"/*") || line.contains("*/") {
+        if line.contains("/*") || line.contains("*/") {
             return true;
         }
         false
     }
 
-    // Excluding /* && */
-    fn is_line_in_multiline_comment(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
-        if index == 0 || index == lines.len() - 1 || line.contains(&"/*") || line.contains(&"*/") {
+    fn is_line_in_multiline_comment_ref(
+        &self,
+        line: &str,
+        index: usize,
+        lines: &Vec<&str>,
+    ) -> bool {
+        if index == 0 || index == lines.len() - 1 || line.contains("/*") || line.contains("*/") {
             return false;
         }
 
@@ -171,11 +175,11 @@ impl Backend {
         let mut bottom_line = false;
 
         while up_index > 0 {
-            if !top_line && lines[up_index].contains(&"/*") {
+            if !top_line && lines[up_index].contains("/*") {
                 top_line = true;
             }
 
-            if !top_line && lines[up_index].contains(&"*/") {
+            if !top_line && lines[up_index].contains("*/") {
                 return false;
             }
 
@@ -185,20 +189,78 @@ impl Backend {
             up_index -= 1;
         }
 
-        if !top_line && lines[up_index].contains(&"/*") {
+        if !top_line && lines[up_index].contains("/*") {
             top_line = true;
         }
 
-        if !top_line && lines[up_index].contains(&"*/") {
+        if !top_line && lines[up_index].contains("*/") {
             return false;
         }
 
         while down_index < lines.len() {
-            if !bottom_line && lines[down_index].contains(&"*/") {
+            if !bottom_line && lines[down_index].contains("*/") {
                 bottom_line = true;
             }
 
-            if !bottom_line && lines[down_index].contains(&"/*") {
+            if !bottom_line && lines[down_index].contains("/*") {
+                return false;
+            }
+
+            if bottom_line {
+                break;
+            }
+
+            down_index += 1;
+        }
+
+        if top_line && bottom_line {
+            return true;
+        }
+
+        false
+    }
+
+    // Excluding /* && */
+    fn is_line_in_multiline_comment(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
+        if index == 0 || index == lines.len() - 1 || line.contains("/*") || line.contains("*/") {
+            return false;
+        }
+
+        let mut up_index = index - 1;
+        let mut down_index = index + 1;
+
+        let mut top_line = false;
+        let mut bottom_line = false;
+
+        while up_index > 0 {
+            if !top_line && lines[up_index].contains("/*") {
+                top_line = true;
+            }
+
+            if !top_line && lines[up_index].contains("*/") {
+                return false;
+            }
+
+            if top_line {
+                break;
+            }
+            up_index -= 1;
+        }
+
+        if !top_line && lines[up_index].contains("/*") {
+            top_line = true;
+        }
+
+        if !top_line && lines[up_index].contains("*/") {
+            return false;
+        }
+
+        while down_index < lines.len() {
+            if !bottom_line && lines[down_index].contains("*/") {
+                bottom_line = true;
+            }
+
+            if !bottom_line && lines[down_index].contains("/*") {
                 return false;
             }
 
@@ -218,11 +280,11 @@ impl Backend {
 
     fn is_line_inside_init_args(&self, line: &str, index: usize, lines: &Vec<String>) -> bool {
         if self.line_contains_cql_kw(line)
-            || line.contains(&";")
-            || line.contains(&"{")
-            || line.contains(&"}")
-            || line.contains(&"(")
-            || line.contains(&")")
+            || line.contains(";")
+            || line.contains("{")
+            || line.contains("}")
+            || line.contains("(")
+            || line.contains(")")
         {
             return false;
         }
@@ -233,7 +295,7 @@ impl Backend {
 
         let lw = line.to_lowercase();
 
-        if lw.contains(&"values") || lw.contains(&"from") {
+        if lw.contains("values") || lw.contains("from") {
             return false;
         }
 
@@ -245,11 +307,11 @@ impl Backend {
 
         while index_up > 0 {
             let up_line = &lines[index_up];
-            if !top_bracket && (up_line.contains(&"{") || up_line.contains(&"(")) {
+            if !top_bracket && (up_line.contains("{") || up_line.contains("(")) {
                 top_bracket = true;
             }
 
-            if !top_bracket && (up_line.contains(&"}") || up_line.contains(&")")) {
+            if !top_bracket && (up_line.contains("}") || up_line.contains(")")) {
                 return false;
             }
 
@@ -265,11 +327,11 @@ impl Backend {
         }
 
         let up_line = &lines[index_up];
-        if !top_bracket && (up_line.contains(&"{") || up_line.contains(&"(")) {
+        if !top_bracket && (up_line.contains("{") || up_line.contains("(")) {
             top_bracket = true;
         }
 
-        if !top_bracket && (up_line.contains(&"}") || up_line.contains(&")")) {
+        if !top_bracket && (up_line.contains("}") || up_line.contains(")")) {
             return false;
         }
 
@@ -280,15 +342,15 @@ impl Backend {
         while index_down < lines.len() {
             let down_line = &lines[index_down];
 
-            if !bottom_bracket && (down_line.contains(&"}") || down_line.contains(&")")) {
+            if !bottom_bracket && (down_line.contains("}") || down_line.contains(")")) {
                 bottom_bracket = true;
             }
 
-            if !bottom_bracket && (down_line.contains(&"{") || down_line.contains(&"(")) {
+            if !bottom_bracket && (down_line.contains("{") || down_line.contains("(")) {
                 return false;
             }
 
-            if !bottom_bracket && down_line.contains(&";") {
+            if !bottom_bracket && down_line.contains(";") {
                 return false;
             }
 
@@ -465,7 +527,7 @@ impl Backend {
     }
 
     /*
-        Removes spaces before ;
+    Removes spaces before ;
     */
     fn fix_semi_colon(&self, lines: &mut Vec<String>) {
         let mut index = 0;
@@ -478,17 +540,17 @@ impl Backend {
     }
 
     /*
-        Removes duplicates of ;
+    Removes duplicates of ;
     */
     fn fix_duplicate_semi_colon(&self, line: &mut String) {
         let mut last_colon = false;
         let mut index = 0;
 
         /*
-            The reason for using unwrap_or_else is
-            that when line contains Japanese (non-standart range ASCII)
-            the line.len() isn't represented correctly and will lead
-            to out of bounds access
+        The reason for using unwrap_or_else is
+        that when line contains Japanese (non-standart range ASCII)
+        the line.len() isn't represented correctly and will lead
+        to out of bounds access
         */
         while index < line.len() {
             if !last_colon && line.chars().nth(index).unwrap_or_else(|| '_') == ';' {
@@ -570,7 +632,7 @@ impl Backend {
                 last_new_line = false;
             }
 
-            if lines[index].contains(&"(") {
+            if lines[index].contains("(") {
                 last_bracket = true;
             } else {
                 last_bracket = false
@@ -590,11 +652,11 @@ impl Backend {
         while index < lines.len() {
             let line = lines[index].to_lowercase();
 
-            if !inside_code_block && line.len() > 0 && !line.contains(&";") {
+            if !inside_code_block && line.len() > 0 && !line.contains(";") {
                 inside_code_block = true;
             }
 
-            if inside_code_block && line.contains(&";") {
+            if inside_code_block && line.contains(";") {
                 inside_code_block = false;
             }
 
@@ -628,11 +690,11 @@ impl Backend {
 
             if index + 1 != lines.len()
                 && line.len() > 0
-                && !line.contains(&";")
-                && !line.contains(&"begin")
-                && !line.contains(&"//")
-                && !line.contains(&"/*")
-                && !line.contains(&"*/")
+                && !line.contains(";")
+                && !line.contains("begin")
+                && !line.contains("//")
+                && !line.contains("/*")
+                && !line.contains("*/")
                 && !self.is_line_in_multiline_comment(&line, index, lines)
             {
                 let lw = lines[index + 1].to_lowercase();
@@ -646,7 +708,11 @@ impl Backend {
 
             if index == lines.len() - 1
                 && line.len() > 0
-                && !line.contains(&";")
+                && !line.contains(";")
+                && !line.contains("begin")
+                && !line.contains("//")
+                && !line.contains("/*")
+                && !line.contains("*/")
                 && !self.is_line_in_multiline_comment(&line, index, lines)
             {
                 lines[index].push(';');
@@ -661,7 +727,7 @@ impl Backend {
 
         while index < lines.len() {
             if index + 1 != lines.len()
-                && (lines[index].contains(&";") || lines[index].to_lowercase().contains(&"begin"))
+                && (lines[index].contains(";") || lines[index].to_lowercase().contains("begin"))
                 && lines[index + 1].len() > 0
             {
                 lines.insert(index + 1, "".to_string());
@@ -688,62 +754,100 @@ impl Backend {
         }
     }
 
-    fn contains_styled_trigger_kw_create_table(&self, line: &str) -> bool {
-        line.contains(&"create") && line.contains(&"table") && line.contains(&"(")
-    }
+    /*
+        Hate this shit だよ xD
+        Formats select statements in the following manner
 
-    fn contains_styled_trigger_kw_insert_into(&self, line: &str) -> bool {
-        line.contains(&"insert") && line.contains(&"(")
-    }
+        SELECT
+        selector1,
+        selector2,
+        selector3,
+        ...,
+        selectorN,
+        FROM [keyspace_name].table_name;
+    */
+    fn format_selectors(&self, lines: &mut Vec<String>) {
+        let mut index = 0;
+        let mut working_buf = Vec::<String>::new();
 
-    fn contains_styled_trigger_kw_values(&self, line: &str) -> bool {
-        line.contains(&"values") && line.contains(&"(")
+        while index < lines.len() {
+            let lw = lines[index].to_lowercase();
+            if lw.contains("select") && self.should_edit_select_statement(&lines[index], lines) {
+                working_buf.clear();
+
+                let mut idx = index;
+
+                while idx < lines.len() {
+                    if !lines[idx].to_lowercase().contains("from") && lines[idx].contains(";") {
+                        return;
+                    }
+
+                    if lines[idx].to_lowercase().contains("from") {
+                        let split: Vec<&str> = lines[idx].split(' ').collect();
+                        for sp in split.into_iter() {
+                            if sp.to_lowercase() == "from" {
+                                break;
+                            }
+                            if sp.to_lowercase() != "select" {
+                                let mut retained = sp.to_string();
+                                retained.retain(|c| c != '\n' && c != '\r');
+                                retained.push('\n');
+                                working_buf.push(retained);
+                            }
+                        }
+
+                        let from_pos = lines[idx].to_lowercase().rfind("from").unwrap();
+                        working_buf.push(lines[idx][from_pos..].to_string());
+                        break;
+                    }
+
+                    let split: Vec<&str> = lines[idx].split(' ').collect();
+
+                    for sp in split.into_iter() {
+                        if sp.to_lowercase() != "select" {
+                            working_buf.push(sp.to_string());
+                        }
+                    }
+
+                    idx += 1;
+                }
+
+                let mut start_idx = index + 1;
+                for kw in working_buf.iter_mut() {
+                    kw.retain(|c| c != '\n' && c != '\r');
+                    kw.push('\n');
+
+                    if start_idx < lines.len() {
+                        lines.insert(start_idx, kw.clone());
+                    } else {
+                        lines.push(kw.clone());
+                    }
+                    start_idx += 1;
+                }
+
+                if lines[index].chars().nth(0).unwrap() == 'S' {
+                    lines[index] = "SELECT".to_string();
+                } else {
+                    lines[index] = "select".to_string();
+                }
+
+                index += working_buf.len();
+            } else {
+                index += 1;
+            }
+        }
     }
 
     /*
-        ISERT INTO ()
-        CREATE TABLE ()
-        VALUES ()
+        Hate this shit だよ xD
+        Formats create table statements in the following manner
 
-        Converets
-
-        CREATE TABLE IF NOT EXISTS table_name ( name type, ...);
-
-        Into
-
-        CREATE TABLE IF NOT EXISTS table_name
-        (
-            name        type,
-            long_name   type,
-            sname       type
-
-            PRIMARY KEY ()
+        CREATE TABLE [keyspace_name].table_name (
+            short_name       type
+            long_name_xxxxx  type
         );
-
-        etc.
     */
-    fn style_format(&self, lines: &mut Vec<String>) {
-        let mut index = 0;
-
-        let mut working_buf = Vec::<&str>::new();
-
-        while index < lines.len() {
-            if self.contains_styled_trigger_kw_create_table(&lines[index].to_lowercase()) {
-                index += 1;
-                continue;
-            }
-            if self.contains_styled_trigger_kw_insert_into(&lines[index].to_lowercase()) {
-                index += 1;
-                continue;
-            }
-            if self.contains_styled_trigger_kw_values(&lines[index].to_lowercase()) {
-                index += 1;
-                continue;
-            }
-
-            index += 1;
-        }
-    }
+    fn format_table_fields(&self, lines: &mut Vec<String>) {}
 
     async fn format_file(&self, lines: &Vec<&str>) -> Vec<TextEdit> {
         let mut edits = Vec::<TextEdit>::new();
@@ -873,13 +977,6 @@ impl Backend {
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let split: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        if split.len() >= 2
-            && (split[split.len() - 2].contains(&"drop")
-                && split[split.len() - 1].contains(&"keyspace"))
-        {
-            return true;
-        }
-
         while index < position.character as usize {
             if met_bracket
                 && (line.chars().nth(index).unwrap_or_else(|| '_') == '"'
@@ -914,6 +1011,56 @@ impl Backend {
         true
     }
 
+    fn should_suggest_drop_keyspaces(&self, line: &str, position: &Position) -> bool {
+        let lw = line.to_lowercase();
+
+        let contains_drop_kw = lw.contains("drop");
+        let contains_keyspace_kw = lw.contains("keyspace");
+
+        if !contains_drop_kw || !contains_keyspace_kw {
+            return false;
+        }
+
+        if let Some(ksp_index) = lw.rfind("keyspace") {
+            if position.character as usize <= ksp_index + 8 {
+                return false;
+            }
+        }
+
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() >= 2 && split[0] == "drop" && split[1] == "keyspace" {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_suggest_drop_tables(&self, line: &str, position: &Position) -> bool {
+        let lw = line.to_lowercase();
+
+        let contains_drop_kw = lw.contains("drop");
+        let contains_keyspace_kw = lw.contains("table");
+
+        if !contains_drop_kw || !contains_keyspace_kw {
+            return false;
+        }
+
+        if let Some(ksp_index) = lw.rfind("table") {
+            if position.character as usize <= ksp_index + 8 {
+                return false;
+            }
+        }
+
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() >= 2 && split[0] == "drop" && split[1] == "table" {
+            return true;
+        }
+
+        false
+    }
+
     fn get_graph_engine_types(&self) -> Vec<String> {
         vec!["Core".to_string(), "Classic".to_string()]
     }
@@ -944,9 +1091,9 @@ impl Backend {
             $ Syntax Legend
 
             Ref Docs:
-                DataStax HCD: https://docs.datastax.com/en/cql/hcd/reference/cql-reference-about.html
-                Tree-Siter: https://github.com/Akzestia/tree-sitter-cql
-                LSP: https://github.com/Akzestia/cql-lsp
+            DataStax HCD: https://docs.datastax.com/en/cql/hcd/reference/cql-reference-about.html
+            Tree-Siter: https://github.com/Akzestia/tree-sitter-cql
+            LSP: https://github.com/Akzestia/cql-lsp
 
             TK_NAME - $.table_keyspace_name
             IDENTIFIER - $.identifier
@@ -1073,6 +1220,14 @@ impl Backend {
             None => return false,
         };
 
+        if prefix.contains("--")
+            || prefix.contains("//")
+            || prefix.contains("/*")
+            || line.ends_with("*/")
+        {
+            return false;
+        }
+
         if let Some(semi_colon_pos) = line.find(&";") {
             if position.character > semi_colon_pos as u32 {
                 return false;
@@ -1081,11 +1236,11 @@ impl Backend {
 
         let lw = line.to_lowercase();
 
-        if lw.contains(&"use") {
+        if lw.contains("use") {
             return false;
         }
 
-        if lw.contains(&"select") && lw.contains(&"from") {
+        if lw.contains("select") && lw.contains("from") {
             if let Some(from_pos) = line.find(&";") {
                 if position.character < (from_pos + 1) as u32 {
                     return false;
@@ -1096,27 +1251,42 @@ impl Backend {
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let split: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        if split.len() > 0 && split[split.len() - 1].contains(&";") {
+        if split.len() > 0 && split[split.len() - 1].contains(";") {
             return false;
         }
 
         if split.len() >= 2
-            && (split[split.len() - 1].contains(&"from")
-                || split[split.len() - 2].contains(&"from"))
+            && (split[split.len() - 1].contains("from") || split[split.len() - 2].contains("from"))
         {
             return false;
         }
 
-        if line.contains(&"(") && !line.contains(&")") {
+        if line.contains("(") && !line.contains(")") {
             return false;
         }
 
-        if line.contains(&"(") && line.contains(&")") {
-            let posx = line.rfind(&")").unwrap();
+        if line.contains("(") && line.contains(")") {
+            let posx = line.find(&")").unwrap();
 
             if posx >= position.character as usize {
                 return false;
             }
+        }
+
+        if lw.contains("drop")
+            && (lw.contains("table")
+                || lw.contains("index")
+                || lw.contains("keyspace")
+                || (lw.contains("materialized") && lw.contains("view"))
+                || lw.contains("role")
+                || (lw.contains("search") && lw.contains("index"))
+                || lw.contains("type")
+                || lw.contains("user")
+                || lw.contains("function")
+                || lw.contains("aggregate"))
+            && split.len() >= 3
+        {
+            return false;
         }
 
         let current = self.current_document.read().await;
@@ -1125,29 +1295,33 @@ impl Backend {
             let document = document_lock.read().await;
             let splitx: Vec<&str> = document.text.split('\n').collect();
 
+            if self.is_line_in_multiline_comment_ref(line, position.line as usize, &splitx) {
+                return false;
+            }
+
             let mut index_up = position.line as usize;
 
             while index_up > 0 && index_up < splitx.len() {
-                if (!splitx[index_up].contains(&"(")
+                if (!splitx[index_up].contains("(")
                     && KEYWORDS_STRINGS_LWC.contains(&splitx[index_up].to_string()))
-                    || splitx[index_up].contains(&";")
+                    || splitx[index_up].contains(";")
                 {
                     break;
                 }
 
-                if splitx[index_up].contains(&"(") {
+                if splitx[index_up].contains("(") {
                     return false;
                 }
 
                 index_up -= 1;
             }
 
-            if index_up < splitx.len() && splitx[index_up].contains(&"(") {
+            if index_up < splitx.len() && splitx[index_up].contains("(") {
                 return false;
             }
         }
 
-        if lw.contains(&"create") && lw.contains(&"if not exists") {
+        if lw.contains("create") && lw.contains("if not exists") {
             let mut index = lw.rfind(&"exists").unwrap();
             index += 6;
 
@@ -1158,7 +1332,7 @@ impl Backend {
             }
         }
 
-        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"table") {
+        if (lw.contains("create") || lw.contains("alter")) && lw.contains("table") {
             let mut index = lw.rfind(&"table").unwrap();
             index += 5;
 
@@ -1169,7 +1343,7 @@ impl Backend {
             }
         }
 
-        if lw.contains(&"create") && lw.contains(&"aggregate") {
+        if lw.contains("create") && lw.contains("aggregate") {
             let mut index = lw.rfind(&"aggregate").unwrap();
             index += 9;
 
@@ -1180,7 +1354,7 @@ impl Backend {
             }
         }
 
-        if lw.contains(&"create") && lw.contains(&"function") {
+        if lw.contains("create") && lw.contains("function") {
             let mut index = lw.rfind(&"function").unwrap();
             index += 8;
 
@@ -1191,7 +1365,7 @@ impl Backend {
             }
         }
 
-        if lw.contains(&"create") && lw.contains(&"index") {
+        if lw.contains("create") && lw.contains("index") {
             let mut index = lw.rfind(&"index").unwrap();
             index += 5;
 
@@ -1202,7 +1376,7 @@ impl Backend {
             }
         }
 
-        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"keyspace") {
+        if (lw.contains("create") || lw.contains("alter")) && lw.contains("keyspace") {
             let mut keyspace = lw.rfind(&"keyspace").unwrap();
             keyspace += 8;
 
@@ -1213,7 +1387,7 @@ impl Backend {
             }
         }
 
-        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"view") {
+        if (lw.contains("create") || lw.contains("alter")) && lw.contains("view") {
             let mut keyspace = lw.rfind(&"view").unwrap();
             keyspace += 4;
 
@@ -1224,7 +1398,7 @@ impl Backend {
             }
         }
 
-        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"role") {
+        if (lw.contains("create") || lw.contains("alter")) && lw.contains("role") {
             let mut keyspace = lw.rfind(&"role").unwrap();
             keyspace += 4;
 
@@ -1235,7 +1409,7 @@ impl Backend {
             }
         }
 
-        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"type") {
+        if (lw.contains("create") || lw.contains("alter")) && lw.contains("type") {
             let mut keyspace = lw.rfind(&"type").unwrap();
             keyspace += 4;
 
@@ -1246,7 +1420,7 @@ impl Backend {
             }
         }
 
-        if (lw.contains(&"create") || lw.contains(&"alter")) && lw.contains(&"user") {
+        if (lw.contains("create") || lw.contains("alter")) && lw.contains("user") {
             let mut keyspace = lw.rfind(&"user").unwrap();
             keyspace += 4;
 
@@ -1269,7 +1443,7 @@ impl Backend {
             etc.
         */
         if split.len() >= 2
-            && (split[split.len() - 1].contains(&"and") || split[split.len() - 2].contains(&"and"))
+            && (split[split.len() - 1].contains("and") || split[split.len() - 2].contains("and"))
         {
             return false;
         }
@@ -1286,8 +1460,8 @@ impl Backend {
             etc.
         */
         if split.len() >= 2
-            && (split[split.len() - 1].contains(&"where")
-                || split[split.len() - 2].contains(&"where"))
+            && (split[split.len() - 1].contains("where")
+                || split[split.len() - 2].contains("where"))
         {
             return false;
         }
@@ -1402,13 +1576,13 @@ impl Backend {
 
         let lw_line = line.to_lowercase();
 
-        if lw_line.contains(&"from") {
+        if lw_line.contains("from") {
             let trimmed = lw_line.trim_end();
             let split: Vec<&str> = trimmed.split(' ').collect();
-            if !split[split.len() - 1].contains(&"from") && split[split.len() - 1].len() > 1 {
+            if !split[split.len() - 1].contains("from") && split[split.len() - 1].len() > 1 {
                 let ksp_tbl = split[split.len() - 1].replace(";", "");
 
-                if ksp_tbl.contains(&".") {
+                if ksp_tbl.contains(".") {
                     let keyspace_table: Vec<&str> = ksp_tbl.split('.').collect();
                     if keyspace_table.len() == 2 {
                         let ksp = keyspace_table[0];
@@ -1657,13 +1831,13 @@ impl Backend {
             return true;
         }
 
-        if splitted.len() > 2 && !splitted[splitted.len() - 2].contains(&",") {
+        if splitted.len() > 2 && !splitted[splitted.len() - 2].contains(",") {
             return false;
         }
 
         if splitted.len() > 0
             && trimmed_prefix.len() != prefix.len()
-            && !splitted[splitted.len() - 1].contains(&",")
+            && !splitted[splitted.len() - 1].contains(",")
         {
             return false;
         }
@@ -1683,7 +1857,7 @@ impl Backend {
 
         if !splitted.contains(&"select")
             || splitted.contains(&"from")
-            || line.to_lowercase().contains(&"from")
+            || line.to_lowercase().contains("from")
         {
             return false;
         }
@@ -1704,7 +1878,7 @@ impl Backend {
 
         if splitted.len() >= 3
             && splitted.contains(&"select")
-            && splitted[splitted.len() - 1].contains(&",")
+            && splitted[splitted.len() - 1].contains(",")
         {
             return false;
         }
@@ -1773,6 +1947,95 @@ impl Backend {
         return Ok(Some(CompletionResponse::Array(items)));
     }
 
+    async fn is_inside_create_table(&self, line: &str, position: &Position) -> bool {
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+        let lw = prefix.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() < 2 {
+            return false;
+        }
+
+        if !line.contains("create") && !line.contains("table") {
+            return false;
+        }
+
+        if split[0] == "create"
+            && split[1] == "table"
+            && line.contains("(")
+            && line.contains(")")
+            && (prefix.contains("(") && !prefix.contains(")"))
+        {
+            return true;
+        }
+
+        let current = self.current_document.read().await;
+
+        if let Some(ref document_lock) = *current {
+            let document = document_lock.read().await;
+            let split: Vec<&str> = document.text.split('\n').collect();
+
+            let mut top_bracket = false;
+            let mut bottom_bracket = false;
+
+            let mut top_index = (position.character - 1) as usize;
+            let mut bottom_index = (position.character + 1) as usize;
+
+            while top_index > 0 {
+                if (split[top_index].contains("create table")
+                    || split[top_index].contains("create table if not exists"))
+                    && split[top_index].contains("(")
+                    && !split[top_index].contains(")")
+                {
+                    top_bracket = true;
+                    break;
+                }
+
+                if self.line_contains_cql_kw(split[bottom_index]) {
+                    return false;
+                }
+
+                top_index -= 1;
+            }
+
+            if !top_bracket
+                && (split[top_index].contains("create table")
+                    || split[top_index].contains("create table if not exists"))
+                && split[top_index].contains("(")
+                && !split[top_index].contains(")")
+            {
+                top_bracket = true;
+            }
+
+            if !top_bracket {
+                return false;
+            }
+
+            while bottom_index < split.len() {
+                if self.line_contains_cql_kw(split[bottom_index]) {
+                    return false;
+                } else if split[bottom_index].contains(")") {
+                    return true;
+                }
+
+                bottom_index += 1;
+            }
+
+            if top_bracket && bottom_bracket {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn should_suggest_types_completions(&self, line: &str, position: &Position) -> bool {
+        false
+    }
+
     // Works
     fn should_suggest_table_completions(&self, line: &str, position: &Position) -> bool {
         let prefix = match line.get(..position.character as usize) {
@@ -1787,29 +2050,34 @@ impl Backend {
         let trimmed_prefix = prefix.trim_end().to_lowercase();
         let splitted: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        if splitted.len() <= 2 && splitted[0].contains(&"update") {
+        if splitted.len() <= 2 && splitted[0].contains("update") {
             return true;
         }
 
         if splitted.len() >= 2
-            && (splitted[splitted.len() - 2].contains(&"insert")
-                || splitted[splitted.len() - 1].contains(&"into"))
+            && (splitted[splitted.len() - 2].contains("insert")
+                || splitted[splitted.len() - 1].contains("into"))
         {
             return true;
         }
 
         if splitted.len() >= 2
-            && (splitted[splitted.len() - 2].contains(&"drop")
-                && splitted[splitted.len() - 1].contains(&"table"))
+            && ((splitted[0].contains("drop") && splitted[1].contains("table"))
+                && ((splitted[splitted.len() - 2].contains("drop")
+                    && splitted[splitted.len() - 1].contains("table"))
+                    || (splitted.len() > 2
+                        && splitted[splitted.len() - 3].contains("drop")
+                        && splitted[splitted.len() - 2].contains("table")
+                        && trimmed_prefix.len() == prefix.len())))
         {
             return true;
         }
 
         if splitted.len() >= 3
-            && ((splitted[splitted.len() - 2].contains(&"insert")
-                || splitted[splitted.len() - 1].contains(&"into"))
-                || (splitted[splitted.len() - 3].contains(&"insert")
-                    || splitted[splitted.len() - 2].contains(&"into")))
+            && ((splitted[splitted.len() - 2].contains("insert")
+                || splitted[splitted.len() - 1].contains("into"))
+                || (splitted[splitted.len() - 3].contains("insert")
+                    || splitted[splitted.len() - 2].contains("into")))
         {
             return true;
         }
@@ -1818,13 +2086,13 @@ impl Backend {
             return false;
         }
         if splitted.len() >= 2
-            && !splitted[splitted.len() - 2].contains(&"from")
-            && !splitted[splitted.len() - 1].contains(&"from")
+            && !splitted[splitted.len() - 2].contains("from")
+            && !splitted[splitted.len() - 1].contains("from")
         {
             return false;
         }
         if splitted.len() >= 2
-            && splitted[splitted.len() - 2].contains(&"from")
+            && splitted[splitted.len() - 2].contains("from")
             && trimmed_prefix.len() != prefix.len()
         {
             return false;
@@ -2008,6 +2276,50 @@ impl Backend {
                     return Ok(Some(CompletionResponse::Array(items)));
                 }
             }
+        }
+        Ok(Some(CompletionResponse::Array(vec![])))
+    }
+
+    async fn handle_drop_keyspace_completions(
+        &self,
+        line: &str,
+        position: &Position,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let mut items = Vec::new();
+        for keyspace in self.get_keyspaces().await {
+            let mut index = position.character as usize;
+            while index > 0 {
+                if line.chars().nth(index).unwrap_or_else(|| '_') == ' ' {
+                    index += 1;
+                    break;
+                }
+                index -= 1;
+            }
+
+            let text_edit = TextEdit {
+                range: Range {
+                    start: Position {
+                        line: position.line,
+                        character: index as u32,
+                    },
+                    end: Position {
+                        line: position.line,
+                        character: line.len() as u32,
+                    },
+                },
+                new_text: format!("{};", keyspace),
+            };
+
+            items.push(CompletionItem {
+                label: keyspace.clone(),
+                kind: Some(CompletionItemKind::VALUE),
+                text_edit: Some(CompletionTextEdit::Edit(text_edit)),
+                ..Default::default()
+            });
+        }
+
+        if !items.is_empty() {
+            return Ok(Some(CompletionResponse::Array(items)));
         }
         Ok(Some(CompletionResponse::Array(vec![])))
     }
@@ -2977,6 +3289,9 @@ impl LanguageServer for Backend {
         let ssh_if_not_exists = self.should_suggest_if_not_exists(line, &position);
         let ssh_create_keywords = self.should_suggest_create_keywords(line, &position);
         let ssh_alter_keywords = self.should_suggest_alter_keywords(line, &position);
+        let ssh_drop_keywords = self.should_suggest_drop_keywords(line, &position);
+        let ssh_drop_keyspaces = self.should_suggest_drop_keyspaces(line, &position);
+        let ssh_drop_tables = self.should_suggest_drop_tables(line, &position);
 
         if ssh_keyspaces {
             return if in_string {
@@ -2994,6 +3309,18 @@ impl LanguageServer for Backend {
 
         if ssh_alter_keywords {
             return self.handle_alter_keywords();
+        }
+
+        if ssh_drop_keywords {
+            return self.handle_drop_keywords();
+        }
+
+        if ssh_drop_keyspaces {
+            return self.handle_drop_keyspace_completions(line, &position).await;
+        }
+
+        if ssh_drop_tables {
+            return self.handle_table_completion(&position).await;
         }
 
         if ssh_from {

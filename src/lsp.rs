@@ -2032,7 +2032,38 @@ impl Backend {
         false
     }
 
-    fn should_suggest_types_completions(&self, line: &str, position: &Position) -> bool {
+    async fn should_suggest_types_completions(&self, line: &str, position: &Position) -> bool {
+        if !self.is_inside_create_table(line, position).await {
+            return false;
+        }
+
+        let lw = line.to_lowercase();
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        if split.len() <= 1 && prefix.len() == prefix.trim().len() {
+            return false;
+        }
+
+        if prefix.len() != prefix.trim().len() && split.len() >= 1 {
+            return true;
+        }
+
+        false
+    }
+
+    /*
+        [field_name] [type] [type_modifier]
+
+        name TEXT [modifier]
+        name TEXT PRIVATE KEY
+        name TEXT static
+    */
+    async fn shoul_suggest_type_modifiers(&self, line: &str, position: &Position) -> bool {
         false
     }
 

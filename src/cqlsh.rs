@@ -60,6 +60,42 @@ impl FromIterator<KeySpace> for Vec<String> {
     }
 }
 
+// CQL types
+#[derive(Debug)]
+pub struct Role {
+    pub name: String,
+}
+
+#[derive(Debug)]
+pub struct Aggregate {
+    pub keyspace_name: String,
+    pub aggregate_name: String,
+}
+
+#[derive(Debug)]
+pub struct Function {
+    pub keyspace_name: String,
+    pub function_name: String,
+}
+
+#[derive(Debug)]
+pub struct Index {
+    pub keyspace_name: String,
+    pub index_name: String,
+}
+
+#[derive(Debug)]
+pub struct Type {
+    pub keyspace_name: String,
+    pub type_name: String,
+}
+
+#[derive(Debug)]
+pub struct View {
+    pub keyspace_name: String,
+    pub view_name: String,
+}
+
 #[derive(Debug)]
 pub struct CqlSettings {
     pub url: String,
@@ -88,7 +124,6 @@ impl CqlSettings {
 /*
     Queries all keyspaces from system_schema
 */
-
 pub async fn query_keyspaces(
     config: &CqlSettings,
 ) -> Result<Vec<KeySpace>, Box<dyn std::error::Error>> {
@@ -197,7 +232,6 @@ pub async fn query_keyspace_scoped_tables(
         let table = row?;
         items.push(table);
     }
-
     Ok(items)
 }
 
@@ -298,7 +332,6 @@ pub async fn query_hard_scoped_fields(
         let row_result = row?;
         let column_name = row_result.0;
         let column_type = row_result.1;
-
         items.push(Column {
             keyspace_name: keyspace_name.to_string(),
             table_name: table_name.to_string(),

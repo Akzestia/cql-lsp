@@ -342,3 +342,212 @@ pub async fn query_hard_scoped_fields(
 
     Ok(items)
 }
+
+/*
+    keyspace_name |
+    aggregate_name |
+    argument_types |
+    final_func |
+    initcond |
+    return_type |
+    state_func |
+    state_type
+*/
+pub async fn query_aggregates(
+    config: &CqlSettings,
+) -> Result<Vec<Aggregate>, Box<dyn std::error::Error>> {
+    let session = SessionBuilder::new()
+        .known_node(&config.url)
+        .user(&config.user, &config.pswd)
+        .connection_timeout(Duration::from_secs(3))
+        .build()
+        .await?;
+
+    let query = format!("SELECT keyspace_name, aggregate_name FROM system_schema.aggregates;");
+
+    let result_rows = session
+        .query_unpaged(query, &[])
+        .await?
+        .into_rows_result()?;
+
+    let mut items = Vec::<Aggregate>::new();
+
+    for row in result_rows.rows::<(String, String)>()? {
+        let row_result = row?;
+        let keyspace_name = row_result.0;
+        let aggregate_name = row_result.1;
+        items.push(Aggregate {
+            keyspace_name,
+            aggregate_name,
+        });
+    }
+
+    Ok(items)
+}
+
+/*
+    keyspace_name |
+    function_name |
+    argument_types |
+    argument_names |
+    body |
+    called_on_null_input |
+    language |
+    return_type
+*/
+pub async fn query_functions(
+    config: &CqlSettings,
+) -> Result<Vec<Function>, Box<dyn std::error::Error>> {
+    let session = SessionBuilder::new()
+        .known_node(&config.url)
+        .user(&config.user, &config.pswd)
+        .connection_timeout(Duration::from_secs(3))
+        .build()
+        .await?;
+
+    let query = format!("SELECT keyspace_name, function_name FROM system_schema.functions;");
+
+    let result_rows = session
+        .query_unpaged(query, &[])
+        .await?
+        .into_rows_result()?;
+
+    let mut items = Vec::<Function>::new();
+
+    for row in result_rows.rows::<(String, String)>()? {
+        let row_result = row?;
+        let keyspace_name = row_result.0;
+        let function_name = row_result.1;
+        items.push(Function {
+            keyspace_name,
+            function_name,
+        });
+    }
+
+    Ok(items)
+}
+
+/*
+    keyspace_name |
+    table_name |
+    index_name |
+    kind |
+    options
+*/
+pub async fn query_indexes(config: &CqlSettings) -> Result<Vec<Index>, Box<dyn std::error::Error>> {
+    let session = SessionBuilder::new()
+        .known_node(&config.url)
+        .user(&config.user, &config.pswd)
+        .connection_timeout(Duration::from_secs(3))
+        .build()
+        .await?;
+
+    let query = format!("SELECT keyspace_name, index_name FROM system_schema.indexes;");
+
+    let result_rows = session
+        .query_unpaged(query, &[])
+        .await?
+        .into_rows_result()?;
+
+    let mut items = Vec::<Index>::new();
+
+    for row in result_rows.rows::<(String, String)>()? {
+        let row_result = row?;
+        let keyspace_name = row_result.0;
+        let index_name = row_result.1;
+        items.push(Index {
+            keyspace_name,
+            index_name,
+        });
+    }
+
+    Ok(items)
+}
+
+/*
+    keyspace_name |
+    type_name   |
+    field_names |
+    field_type
+*/
+pub async fn query_types(config: &CqlSettings) -> Result<Vec<Type>, Box<dyn std::error::Error>> {
+    let session = SessionBuilder::new()
+        .known_node(&config.url)
+        .user(&config.user, &config.pswd)
+        .connection_timeout(Duration::from_secs(3))
+        .build()
+        .await?;
+
+    let query = format!("SELECT keyspace_name, type_name FROM system_schema.types;");
+
+    let result_rows = session
+        .query_unpaged(query, &[])
+        .await?
+        .into_rows_result()?;
+
+    let mut items = Vec::<Type>::new();
+
+    for row in result_rows.rows::<(String, String)>()? {
+        let row_result = row?;
+        let keyspace_name = row_result.0;
+        let type_name = row_result.1;
+        items.push(Type {
+            keyspace_name,
+            type_name,
+        });
+    }
+
+    Ok(items)
+}
+
+/*
+    keyspace_name |
+    view_name |
+    base_table_id |
+    base_table_name |
+    bloom_filter_fp_chance |
+    caching |
+    comment |
+    compaction |
+    compression |
+    crc_check_chance |
+    dclocal_read_repair_chance |
+    default_time_to_live |
+    extensions | gc_grace_seconds |
+    id | include_all_columns |
+    max_index_interval |
+    memtable_flush_period_in_ms |
+    min_index_interval |
+    read_repair_chance |
+    speculative_retry |
+    where_clause
+*/
+pub async fn query_views(config: &CqlSettings) -> Result<Vec<View>, Box<dyn std::error::Error>> {
+    let session = SessionBuilder::new()
+        .known_node(&config.url)
+        .user(&config.user, &config.pswd)
+        .connection_timeout(Duration::from_secs(3))
+        .build()
+        .await?;
+
+    let query = format!("SELECT keyspace_name, view_name FROM system_schema.views;");
+
+    let result_rows = session
+        .query_unpaged(query, &[])
+        .await?
+        .into_rows_result()?;
+
+    let mut items = Vec::<View>::new();
+
+    for row in result_rows.rows::<(String, String)>()? {
+        let row_result = row?;
+        let keyspace_name = row_result.0;
+        let view_name = row_result.1;
+        items.push(View {
+            keyspace_name,
+            view_name,
+        });
+    }
+
+    Ok(items)
+}

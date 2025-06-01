@@ -2109,56 +2109,53 @@ impl Backend {
 
         if let Some(ref document_lock) = *current {
             let document = document_lock.read().await;
-            let split: Vec<&str> = document.text.split('\n').collect();
+            let lw_doc_text = document.text.to_lowercase();
+            let lines: Vec<&str> = lw_doc_text.split('\n').collect();
 
-            let mut top_bracket = false;
-            let mut bottom_bracket = false;
-
-            let mut top_index = (position.character - 1) as usize;
-            let mut bottom_index = (position.character + 1) as usize;
-
-            while top_index > 0 {
-                if (split[top_index].contains("create table")
-                    || split[top_index].contains("create table if not exists"))
-                    && split[top_index].contains("(")
-                    && !split[top_index].contains(")")
-                {
-                    top_bracket = true;
-                    break;
-                }
-
-                if self.line_contains_cql_kw(split[bottom_index]) {
-                    return false;
-                }
-
-                top_index -= 1;
-            }
-
-            if !top_bracket
-                && (split[top_index].contains("create table")
-                    || split[top_index].contains("create table if not exists"))
-                && split[top_index].contains("(")
-                && !split[top_index].contains(")")
-            {
-                top_bracket = true;
-            }
-
-            if !top_bracket {
+            let current_line = position.line as usize;
+            if current_line >= lines.len() {
                 return false;
             }
 
-            while bottom_index < split.len() {
-                if self.line_contains_cql_kw(split[bottom_index]) {
-                    return false;
-                } else if split[bottom_index].contains(")") {
-                    return true;
+            let mut found_create_table = false;
+            let mut search_index = current_line;
+
+            loop {
+                let line_content = lines[search_index];
+
+                if (line_content.contains("create table")
+                    || line_content.contains("create table if not exists"))
+                    && line_content.contains("(")
+                    && !line_content.contains(")")
+                {
+                    found_create_table = true;
+                    break;
                 }
 
-                bottom_index += 1;
+                if self.line_contains_cql_kw(line_content) {
+                    return false;
+                }
+
+                if search_index == 0 {
+                    break;
+                }
+                search_index -= 1;
             }
 
-            if top_bracket && bottom_bracket {
-                return true;
+            if !found_create_table {
+                return false;
+            }
+
+            for i in (current_line + 1)..lines.len() {
+                let line_content = lines[i];
+
+                if self.line_contains_cql_kw(line_content) {
+                    return false;
+                }
+
+                if line_content.contains(")") {
+                    return true;
+                }
             }
         }
 
@@ -2170,23 +2167,20 @@ impl Backend {
             return false;
         }
 
-        let lw = line.to_lowercase();
-        let split: Vec<&str> = lw.split(' ').collect();
-
         let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
 
-        if split.len() <= 1 && prefix.len() == prefix.trim().len() {
-            return false;
-        }
+        let trimmed_prefix = prefix.trim();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        if prefix.len() != prefix.trim().len() && split.len() >= 1 {
-            return true;
+        match split.len() {
+            0 => false,
+            1 => prefix.ends_with(' '),
+            2 => !prefix.ends_with(' '),
+            _ => false,
         }
-
-        false
     }
 
     /*
@@ -2197,7 +2191,34 @@ impl Backend {
         name TEXT static
     */
     async fn shoul_suggest_type_modifiers(&self, line: &str, position: &Position) -> bool {
-        false
+        if !self.is_inside_create_table(line, position).await {
+            return false;
+        }
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let trimmed_prefix = prefix.trim().to_lowercase();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        match split.len() {
+            0 => false,
+            2 => prefix.ends_with(' ') && CQL_TYPES_LWC.contains(&split[1].to_string()),
+            3 => {
+                (!prefix.ends_with(' ') && CQL_TYPES_LWC.contains(&split[1].to_string()))
+                    || (prefix.ends_with(' ')
+                        && CQL_TYPES_LWC.contains(&split[1].to_string())
+                        && split[2] == "primary")
+            }
+            4 => {
+                !prefix.ends_with(' ')
+                    && CQL_TYPES_LWC.contains(&split[1].to_string())
+                    && split[2] == "primary"
+            }
+            _ => false,
+        }
     }
 
     // Works
@@ -2542,6 +2563,77 @@ impl Backend {
         return Ok(Some(CompletionResponse::Array(
             TYPES.iter().cloned().collect(),
         )));
+    }
+
+    fn handle_type_modifiers_completion(
+        &self,
+        line: &str,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        if line.to_lowercase().contains("primary") {
+            return Ok(Some(CompletionResponse::Array(vec![
+                CompletionItem {
+                    label: "KEY".to_string(),
+                    kind: Some(CompletionItemKind::KEYWORD),
+                    detail: Some("Upper case KEY type modifier".to_string()),
+                    documentation: Some(Documentation::String("KEY type modifier".to_string())),
+                    insert_text: Some(r#"KEY"#.to_string()),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    ..Default::default()
+                },
+                CompletionItem {
+                    label: "key".to_string(),
+                    kind: Some(CompletionItemKind::KEYWORD),
+                    detail: Some("Lower case key type modifier".to_string()),
+                    documentation: Some(Documentation::String("key type modifier".to_string())),
+                    insert_text: Some(r#"key"#.to_string()),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    ..Default::default()
+                },
+            ])));
+        }
+
+        return Ok(Some(CompletionResponse::Array(vec![
+            CompletionItem {
+                label: "PRIMARY KEY".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Upper case PRIMARY KEY type modifier".to_string()),
+                documentation: Some(Documentation::String(
+                    "PRIMARY KEY type modifier".to_string(),
+                )),
+                insert_text: Some(r#"PRIMARY KEY"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "primary key".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Lower case primary key type modifier".to_string()),
+                documentation: Some(Documentation::String(
+                    "primary key type modifier".to_string(),
+                )),
+                insert_text: Some(r#"primary key"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "STATIC".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Upper case STATIC type modifier".to_string()),
+                documentation: Some(Documentation::String("STATIC type modifier".to_string())),
+                insert_text: Some(r#"STATIC"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "static".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Lower case static type modifier".to_string()),
+                documentation: Some(Documentation::String("static type modifier".to_string())),
+                insert_text: Some(r#"static"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ])));
     }
 
     async fn handle_fields_completion(

@@ -374,38 +374,6 @@ impl Backend {
         false
     }
 
-    fn is_string_literal(&self, line: &str) -> bool {
-        let mut met_v1_op_bracket = false;
-        let mut met_v2_op_bracket = false;
-
-        for char in line.chars() {
-            if met_v1_op_bracket && char == '\'' {
-                return true;
-            }
-
-            if met_v2_op_bracket && char == '"' {
-                return true;
-            }
-
-            if !met_v1_op_bracket && char == '\'' {
-                met_v1_op_bracket = true;
-            }
-            if !met_v2_op_bracket && char == '"' {
-                met_v2_op_bracket = true;
-            }
-
-            if met_v1_op_bracket && char == '"' {
-                return false;
-            }
-
-            if met_v2_op_bracket && char == '\'' {
-                return false;
-            }
-        }
-
-        false
-    }
-
     // -----------------------------[Formatting]-----------------------------
 
     fn remove_leading_spaces_wildcards(&self, line: &mut String) {
@@ -1959,10 +1927,6 @@ impl Backend {
         let split: Vec<&str> = lw.split(' ').collect();
 
         if split.len() < 2 {
-            return false;
-        }
-
-        if !line.contains("create") && !line.contains("table") {
             return false;
         }
 

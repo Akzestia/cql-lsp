@@ -7,6 +7,7 @@ target/
 **/*.rs.bk
 
 # Cql files
+cql/
 *.cql
 
 # Shell scripts

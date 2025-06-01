@@ -3375,7 +3375,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // LIST<>
         CompletionItem {
             label: "LIST<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("LIST type with parameter".to_string()),
             documentation: Some(Documentation::String(
                 "LIST<type> - Collection type".to_string(),
@@ -3386,7 +3386,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "list<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("list type with parameter".to_string()),
             documentation: Some(Documentation::String(
                 "list<type> - Collection type".to_string(),
@@ -3398,7 +3398,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // SET<>
         CompletionItem {
             label: "SET<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("SET type with parameter".to_string()),
             documentation: Some(Documentation::String(
                 "SET<type> - Collection type".to_string(),
@@ -3409,7 +3409,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "set<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("set type with parameter".to_string()),
             documentation: Some(Documentation::String(
                 "set<type> - Collection type".to_string(),
@@ -3421,7 +3421,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // MAP<>
         CompletionItem {
             label: "MAP<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("MAP type with parameters".to_string()),
             documentation: Some(Documentation::String(
                 "MAP<key, value> - Collection type".to_string(),
@@ -3432,7 +3432,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "map<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("map type with parameters".to_string()),
             documentation: Some(Documentation::String(
                 "map<key, value> - Collection type".to_string(),
@@ -3444,7 +3444,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // TUPLE<>
         CompletionItem {
             label: "TUPLE<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("TUPLE type with parameters".to_string()),
             documentation: Some(Documentation::String(
                 "TUPLE<type1, type2, ...> - Composite type".to_string(),
@@ -3455,7 +3455,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "tuple<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("tuple type with parameters".to_string()),
             documentation: Some(Documentation::String(
                 "tuple<type1, type2, ...> - Composite type".to_string(),
@@ -3467,7 +3467,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // FROZEN<>
         CompletionItem {
             label: "FROZEN<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("FROZEN type with parameter".to_string()),
             documentation: Some(Documentation::String(
                 "FROZEN<type> - Frozen collection type".to_string(),
@@ -3478,7 +3478,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "frozen<>".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("frozen type with parameter".to_string()),
             documentation: Some(Documentation::String(
                 "frozen<type> - Frozen collection type".to_string(),
@@ -3492,7 +3492,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // ASCII
         CompletionItem {
             label: "ASCII".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("ASCII type".to_string()),
             documentation: Some(Documentation::String(
                 "ASCII - Character string type".to_string(),
@@ -3503,7 +3503,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "ascii".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("ascii type".to_string()),
             documentation: Some(Documentation::String(
                 "ascii - Character string type".to_string(),
@@ -3515,7 +3515,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // BIGINT
         CompletionItem {
             label: "BIGINT".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("BIGINT type".to_string()),
             documentation: Some(Documentation::String(
                 "BIGINT - 64-bit signed integer".to_string(),
@@ -3526,7 +3526,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "bigint".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("bigint type".to_string()),
             documentation: Some(Documentation::String(
                 "bigint - 64-bit signed integer".to_string(),
@@ -3538,7 +3538,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // BLOB
         CompletionItem {
             label: "BLOB".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("BLOB type".to_string()),
             documentation: Some(Documentation::String(
                 "BLOB - Binary large object".to_string(),
@@ -3549,7 +3549,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "blob".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("blob type".to_string()),
             documentation: Some(Documentation::String(
                 "blob - Binary large object".to_string(),
@@ -3561,7 +3561,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // BOOLEAN
         CompletionItem {
             label: "BOOLEAN".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("BOOLEAN type".to_string()),
             documentation: Some(Documentation::String("BOOLEAN - True or false".to_string())),
             insert_text: Some(r#"BOOLEAN"#.to_string()),
@@ -3570,7 +3570,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "boolean".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("boolean type".to_string()),
             documentation: Some(Documentation::String("boolean - True or false".to_string())),
             insert_text: Some(r#"boolean"#.to_string()),
@@ -3580,7 +3580,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // COUNTER
         CompletionItem {
             label: "COUNTER".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("COUNTER type".to_string()),
             documentation: Some(Documentation::String(
                 "COUNTER - Distributed counter".to_string(),
@@ -3591,7 +3591,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "counter".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("counter type".to_string()),
             documentation: Some(Documentation::String(
                 "counter - Distributed counter".to_string(),
@@ -3603,7 +3603,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // DATE
         CompletionItem {
             label: "DATE".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("DATE type".to_string()),
             documentation: Some(Documentation::String(
                 "DATE - Date without time".to_string(),
@@ -3614,7 +3614,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "date".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("date type".to_string()),
             documentation: Some(Documentation::String(
                 "date - Date without time".to_string(),
@@ -3626,7 +3626,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // DECIMAL
         CompletionItem {
             label: "DECIMAL".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("DECIMAL type".to_string()),
             documentation: Some(Documentation::String(
                 "DECIMAL - Variable-precision decimal".to_string(),
@@ -3637,7 +3637,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "decimal".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("decimal type".to_string()),
             documentation: Some(Documentation::String(
                 "decimal - Variable-precision decimal".to_string(),
@@ -3649,7 +3649,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // DOUBLE
         CompletionItem {
             label: "DOUBLE".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("DOUBLE type".to_string()),
             documentation: Some(Documentation::String(
                 "DOUBLE - 64-bit floating point".to_string(),
@@ -3660,7 +3660,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "double".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("double type".to_string()),
             documentation: Some(Documentation::String(
                 "double - 64-bit floating point".to_string(),
@@ -3672,7 +3672,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // FLOAT
         CompletionItem {
             label: "FLOAT".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("FLOAT type".to_string()),
             documentation: Some(Documentation::String(
                 "FLOAT - 32-bit floating point".to_string(),
@@ -3683,7 +3683,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "float".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("float type".to_string()),
             documentation: Some(Documentation::String(
                 "float - 32-bit floating point".to_string(),
@@ -3695,7 +3695,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // INET
         CompletionItem {
             label: "INET".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("INET type".to_string()),
             documentation: Some(Documentation::String("INET - IP address".to_string())),
             insert_text: Some(r#"INET"#.to_string()),
@@ -3704,7 +3704,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "inet".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("inet type".to_string()),
             documentation: Some(Documentation::String("inet - IP address".to_string())),
             insert_text: Some(r#"inet"#.to_string()),
@@ -3714,7 +3714,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // INT
         CompletionItem {
             label: "INT".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("INT type".to_string()),
             documentation: Some(Documentation::String(
                 "INT - 32-bit signed integer".to_string(),
@@ -3725,7 +3725,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "int".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("int type".to_string()),
             documentation: Some(Documentation::String(
                 "int - 32-bit signed integer".to_string(),
@@ -3737,7 +3737,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // LIST
         CompletionItem {
             label: "LIST".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("LIST type".to_string()),
             documentation: Some(Documentation::String("LIST - Collection type".to_string())),
             insert_text: Some(r#"LIST"#.to_string()),
@@ -3746,7 +3746,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "list".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("list type".to_string()),
             documentation: Some(Documentation::String("list - Collection type".to_string())),
             insert_text: Some(r#"list"#.to_string()),
@@ -3756,7 +3756,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // MAP
         CompletionItem {
             label: "MAP".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("MAP type".to_string()),
             documentation: Some(Documentation::String(
                 "MAP - Key-value collection type".to_string(),
@@ -3767,7 +3767,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "map".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("map type".to_string()),
             documentation: Some(Documentation::String(
                 "map - Key-value collection type".to_string(),
@@ -3779,7 +3779,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // SET
         CompletionItem {
             label: "SET".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("SET type".to_string()),
             documentation: Some(Documentation::String(
                 "SET - Unique collection type".to_string(),
@@ -3790,7 +3790,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "set".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("set type".to_string()),
             documentation: Some(Documentation::String(
                 "set - Unique collection type".to_string(),
@@ -3802,7 +3802,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // SMALLINT
         CompletionItem {
             label: "SMALLINT".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("SMALLINT type".to_string()),
             documentation: Some(Documentation::String(
                 "SMALLINT - 16-bit signed integer".to_string(),
@@ -3813,7 +3813,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "smallint".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("smallint type".to_string()),
             documentation: Some(Documentation::String(
                 "smallint - 16-bit signed integer".to_string(),
@@ -3825,7 +3825,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // TEXT
         CompletionItem {
             label: "TEXT".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("TEXT type".to_string()),
             documentation: Some(Documentation::String(
                 "TEXT - UTF-8 encoded string".to_string(),
@@ -3836,7 +3836,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "text".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("text type".to_string()),
             documentation: Some(Documentation::String(
                 "text - UTF-8 encoded string".to_string(),
@@ -3848,7 +3848,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // TIME
         CompletionItem {
             label: "TIME".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("TIME type".to_string()),
             documentation: Some(Documentation::String(
                 "TIME - Time without date".to_string(),
@@ -3859,7 +3859,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "time".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("time type".to_string()),
             documentation: Some(Documentation::String(
                 "time - Time without date".to_string(),
@@ -3871,7 +3871,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // TIMESTAMP
         CompletionItem {
             label: "TIMESTAMP".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("TIMESTAMP type".to_string()),
             documentation: Some(Documentation::String(
                 "TIMESTAMP - Date and time".to_string(),
@@ -3882,7 +3882,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "timestamp".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("timestamp type".to_string()),
             documentation: Some(Documentation::String(
                 "timestamp - Date and time".to_string(),
@@ -3894,7 +3894,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // TIMEUUID
         CompletionItem {
             label: "TIMEUUID".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("TIMEUUID type".to_string()),
             documentation: Some(Documentation::String(
                 "TIMEUUID - Version 1 UUID".to_string(),
@@ -3905,7 +3905,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "timeuuid".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("timeuuid type".to_string()),
             documentation: Some(Documentation::String(
                 "timeuuid - Version 1 UUID".to_string(),
@@ -3917,7 +3917,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // TINYINT
         CompletionItem {
             label: "TINYINT".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("TINYINT type".to_string()),
             documentation: Some(Documentation::String(
                 "TINYINT - 8-bit signed integer".to_string(),
@@ -3928,7 +3928,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "tinyint".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("tinyint type".to_string()),
             documentation: Some(Documentation::String(
                 "tinyint - 8-bit signed integer".to_string(),
@@ -3940,7 +3940,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // TUPLE
         CompletionItem {
             label: "TUPLE".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("TUPLE type".to_string()),
             documentation: Some(Documentation::String("TUPLE - Composite type".to_string())),
             insert_text: Some(r#"TUPLE"#.to_string()),
@@ -3949,7 +3949,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "tuple".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("tuple type".to_string()),
             documentation: Some(Documentation::String("tuple - Composite type".to_string())),
             insert_text: Some(r#"tuple"#.to_string()),
@@ -3959,7 +3959,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // UUID
         CompletionItem {
             label: "UUID".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("UUID type".to_string()),
             documentation: Some(Documentation::String(
                 "UUID - Universally unique identifier".to_string(),
@@ -3970,7 +3970,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "uuid".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("uuid type".to_string()),
             documentation: Some(Documentation::String(
                 "uuid - Universally unique identifier".to_string(),
@@ -3982,7 +3982,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // VARCHAR
         CompletionItem {
             label: "VARCHAR".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("VARCHAR type".to_string()),
             documentation: Some(Documentation::String(
                 "VARCHAR - Variable-length string".to_string(),
@@ -3993,7 +3993,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "varchar".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("varchar type".to_string()),
             documentation: Some(Documentation::String(
                 "varchar - Variable-length string".to_string(),
@@ -4005,7 +4005,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // VARINT
         CompletionItem {
             label: "VARINT".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("VARINT type".to_string()),
             documentation: Some(Documentation::String(
                 "VARINT - Arbitrary-precision integer".to_string(),
@@ -4016,7 +4016,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "varint".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("varint type".to_string()),
             documentation: Some(Documentation::String(
                 "varint - Arbitrary-precision integer".to_string(),
@@ -4028,7 +4028,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         // FROZEN
         CompletionItem {
             label: "FROZEN".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("FROZEN type".to_string()),
             documentation: Some(Documentation::String(
                 "FROZEN - Frozen collection type".to_string(),
@@ -4039,7 +4039,7 @@ pub static TYPES: Lazy<Vec<CompletionItem>> = Lazy::new(|| {
         },
         CompletionItem {
             label: "frozen".to_string(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            kind: Some(CompletionItemKind::KEYWORD),
             detail: Some("frozen type".to_string()),
             documentation: Some(Documentation::String(
                 "frozen - Frozen collection type".to_string(),

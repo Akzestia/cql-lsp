@@ -1,4 +1,4 @@
-use log::{debug, info, warn};
+use log::warn;
 
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
@@ -7,7 +7,10 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::consts::*;
-use crate::cqlsh::{self, Column, CqlSettings};
+use crate::cqlsh::{
+    self, Column, CqlSettings, query_aggregates, query_functions, query_indexes, query_types,
+    query_views,
+};
 
 /*
     Based on DataStax HCD && CQL versions 3.4+
@@ -366,38 +369,6 @@ impl Backend {
 
         if top_bracket && bottom_bracket {
             return true;
-        }
-
-        false
-    }
-
-    fn is_string_literal(&self, line: &str) -> bool {
-        let mut met_v1_op_bracket = false;
-        let mut met_v2_op_bracket = false;
-
-        for char in line.chars() {
-            if met_v1_op_bracket && char == '\'' {
-                return true;
-            }
-
-            if met_v2_op_bracket && char == '"' {
-                return true;
-            }
-
-            if !met_v1_op_bracket && char == '\'' {
-                met_v1_op_bracket = true;
-            }
-            if !met_v2_op_bracket && char == '"' {
-                met_v2_op_bracket = true;
-            }
-
-            if met_v1_op_bracket && char == '"' {
-                return false;
-            }
-
-            if met_v2_op_bracket && char == '\'' {
-                return false;
-            }
         }
 
         false
@@ -1014,6 +985,11 @@ impl Backend {
     fn should_suggest_drop_keyspaces(&self, line: &str, position: &Position) -> bool {
         let lw = line.to_lowercase();
 
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
         let contains_drop_kw = lw.contains("drop");
         let contains_keyspace_kw = lw.contains("keyspace");
 
@@ -1029,7 +1005,163 @@ impl Backend {
 
         let split: Vec<&str> = lw.split(' ').collect();
 
-        if split.len() >= 2 && split[0] == "drop" && split[1] == "keyspace" {
+        if split.len() >= 2 && split[0] == "drop" && split[1] == "keyspace" && !prefix.contains(";")
+        {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_suggest_drop_aggregate(&self, line: &str, position: &Position) -> bool {
+        let lw = line.to_lowercase();
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let contains_drop_kw = lw.contains("drop");
+        let contains_aggregate_kw = lw.contains("aggregate");
+
+        if !contains_drop_kw || !contains_aggregate_kw {
+            return false;
+        }
+
+        if let Some(ksp_index) = lw.rfind("aggregate") {
+            if position.character as usize <= ksp_index + 8 {
+                return false;
+            }
+        }
+
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() >= 2
+            && split[0] == "drop"
+            && split[1] == "aggregate"
+            && !prefix.contains(";")
+        {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_suggest_drop_function(&self, line: &str, position: &Position) -> bool {
+        let lw = line.to_lowercase();
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let contains_drop_kw = lw.contains("drop");
+        let contains_function_kw = lw.contains("function");
+
+        if !contains_drop_kw || !contains_function_kw {
+            return false;
+        }
+
+        if let Some(ksp_function) = lw.rfind("function") {
+            if position.character as usize <= ksp_function + 8 {
+                return false;
+            }
+        }
+
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() >= 2 && split[0] == "drop" && split[1] == "function" && !prefix.contains(";")
+        {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_suggest_drop_indexes(&self, line: &str, position: &Position) -> bool {
+        let lw = line.to_lowercase();
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let contains_drop_kw = lw.contains("drop");
+        let contains_index_kw = lw.contains("index");
+
+        if !contains_drop_kw || !contains_index_kw {
+            return false;
+        }
+
+        if let Some(ksp_index) = lw.rfind("index") {
+            if position.character as usize <= ksp_index + 8 {
+                return false;
+            }
+        }
+
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() >= 2 && split[0] == "drop" && split[1] == "index" && !prefix.contains(";") {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_suggest_drop_types(&self, line: &str, position: &Position) -> bool {
+        let lw = line.to_lowercase();
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let contains_drop_kw = lw.contains("drop");
+        let contains_type_kw = lw.contains("type");
+
+        if !contains_drop_kw || !contains_type_kw {
+            return false;
+        }
+
+        if let Some(ksp_type) = lw.rfind("type") {
+            if position.character as usize <= ksp_type + 8 {
+                return false;
+            }
+        }
+
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() >= 2 && split[0] == "drop" && split[1] == "type" && !prefix.contains(";") {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_suggest_drop_views(&self, line: &str, position: &Position) -> bool {
+        let lw = line.to_lowercase();
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let contains_drop_kw = lw.contains("drop");
+        let contains_view_kw = lw.contains("view");
+
+        if !contains_drop_kw || !contains_view_kw {
+            return false;
+        }
+
+        if let Some(ksp_view) = lw.rfind("view") {
+            if position.character as usize <= ksp_view + 8 {
+                return false;
+            }
+        }
+
+        let split: Vec<&str> = lw.split(' ').collect();
+
+        if split.len() >= 2 && split[0] == "drop" && split[1] == "view" && !prefix.contains(";") {
             return true;
         }
 
@@ -1038,6 +1170,11 @@ impl Backend {
 
     fn should_suggest_drop_tables(&self, line: &str, position: &Position) -> bool {
         let lw = line.to_lowercase();
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
 
         let contains_drop_kw = lw.contains("drop");
         let contains_keyspace_kw = lw.contains("table");
@@ -1054,7 +1191,7 @@ impl Backend {
 
         let split: Vec<&str> = lw.split(' ').collect();
 
-        if split.len() >= 2 && split[0] == "drop" && split[1] == "table" {
+        if split.len() >= 2 && split[0] == "drop" && split[1] == "table" && !prefix.contains(";") {
             return true;
         }
 
@@ -1959,10 +2096,6 @@ impl Backend {
             return false;
         }
 
-        if !line.contains("create") && !line.contains("table") {
-            return false;
-        }
-
         if split[0] == "create"
             && split[1] == "table"
             && line.contains("(")
@@ -1976,56 +2109,53 @@ impl Backend {
 
         if let Some(ref document_lock) = *current {
             let document = document_lock.read().await;
-            let split: Vec<&str> = document.text.split('\n').collect();
+            let lw_doc_text = document.text.to_lowercase();
+            let lines: Vec<&str> = lw_doc_text.split('\n').collect();
 
-            let mut top_bracket = false;
-            let mut bottom_bracket = false;
-
-            let mut top_index = (position.character - 1) as usize;
-            let mut bottom_index = (position.character + 1) as usize;
-
-            while top_index > 0 {
-                if (split[top_index].contains("create table")
-                    || split[top_index].contains("create table if not exists"))
-                    && split[top_index].contains("(")
-                    && !split[top_index].contains(")")
-                {
-                    top_bracket = true;
-                    break;
-                }
-
-                if self.line_contains_cql_kw(split[bottom_index]) {
-                    return false;
-                }
-
-                top_index -= 1;
-            }
-
-            if !top_bracket
-                && (split[top_index].contains("create table")
-                    || split[top_index].contains("create table if not exists"))
-                && split[top_index].contains("(")
-                && !split[top_index].contains(")")
-            {
-                top_bracket = true;
-            }
-
-            if !top_bracket {
+            let current_line = position.line as usize;
+            if current_line >= lines.len() {
                 return false;
             }
 
-            while bottom_index < split.len() {
-                if self.line_contains_cql_kw(split[bottom_index]) {
-                    return false;
-                } else if split[bottom_index].contains(")") {
-                    return true;
+            let mut found_create_table = false;
+            let mut search_index = current_line;
+
+            loop {
+                let line_content = lines[search_index];
+
+                if (line_content.contains("create table")
+                    || line_content.contains("create table if not exists"))
+                    && line_content.contains("(")
+                    && !line_content.contains(")")
+                {
+                    found_create_table = true;
+                    break;
                 }
 
-                bottom_index += 1;
+                if self.line_contains_cql_kw(line_content) {
+                    return false;
+                }
+
+                if search_index == 0 {
+                    break;
+                }
+                search_index -= 1;
             }
 
-            if top_bracket && bottom_bracket {
-                return true;
+            if !found_create_table {
+                return false;
+            }
+
+            for i in (current_line + 1)..lines.len() {
+                let line_content = lines[i];
+
+                if self.line_contains_cql_kw(line_content) {
+                    return false;
+                }
+
+                if line_content.contains(")") {
+                    return true;
+                }
             }
         }
 
@@ -2037,23 +2167,20 @@ impl Backend {
             return false;
         }
 
-        let lw = line.to_lowercase();
-        let split: Vec<&str> = lw.split(' ').collect();
-
         let prefix = match line.get(..position.character as usize) {
             Some(p) => p,
             None => return false,
         };
 
-        if split.len() <= 1 && prefix.len() == prefix.trim().len() {
-            return false;
-        }
+        let trimmed_prefix = prefix.trim();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
 
-        if prefix.len() != prefix.trim().len() && split.len() >= 1 {
-            return true;
+        match split.len() {
+            0 => false,
+            1 => prefix.ends_with(' '),
+            2 => !prefix.ends_with(' '),
+            _ => false,
         }
-
-        false
     }
 
     /*
@@ -2064,7 +2191,34 @@ impl Backend {
         name TEXT static
     */
     async fn shoul_suggest_type_modifiers(&self, line: &str, position: &Position) -> bool {
-        false
+        if !self.is_inside_create_table(line, position).await {
+            return false;
+        }
+
+        let prefix = match line.get(..position.character as usize) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        let trimmed_prefix = prefix.trim().to_lowercase();
+        let split: Vec<&str> = trimmed_prefix.split(' ').collect();
+
+        match split.len() {
+            0 => false,
+            2 => prefix.ends_with(' ') && CQL_TYPES_LWC.contains(&split[1].to_string()),
+            3 => {
+                (!prefix.ends_with(' ') && CQL_TYPES_LWC.contains(&split[1].to_string()))
+                    || (prefix.ends_with(' ')
+                        && CQL_TYPES_LWC.contains(&split[1].to_string())
+                        && split[2] == "primary")
+            }
+            4 => {
+                !prefix.ends_with(' ')
+                    && CQL_TYPES_LWC.contains(&split[1].to_string())
+                    && split[2] == "primary"
+            }
+            _ => false,
+        }
     }
 
     // Works
@@ -2409,6 +2563,77 @@ impl Backend {
         return Ok(Some(CompletionResponse::Array(
             TYPES.iter().cloned().collect(),
         )));
+    }
+
+    fn handle_type_modifiers_completion(
+        &self,
+        line: &str,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        if line.to_lowercase().contains("primary") {
+            return Ok(Some(CompletionResponse::Array(vec![
+                CompletionItem {
+                    label: "KEY".to_string(),
+                    kind: Some(CompletionItemKind::KEYWORD),
+                    detail: Some("Upper case KEY type modifier".to_string()),
+                    documentation: Some(Documentation::String("KEY type modifier".to_string())),
+                    insert_text: Some(r#"KEY"#.to_string()),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    ..Default::default()
+                },
+                CompletionItem {
+                    label: "key".to_string(),
+                    kind: Some(CompletionItemKind::KEYWORD),
+                    detail: Some("Lower case key type modifier".to_string()),
+                    documentation: Some(Documentation::String("key type modifier".to_string())),
+                    insert_text: Some(r#"key"#.to_string()),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    ..Default::default()
+                },
+            ])));
+        }
+
+        return Ok(Some(CompletionResponse::Array(vec![
+            CompletionItem {
+                label: "PRIMARY KEY".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Upper case PRIMARY KEY type modifier".to_string()),
+                documentation: Some(Documentation::String(
+                    "PRIMARY KEY type modifier".to_string(),
+                )),
+                insert_text: Some(r#"PRIMARY KEY"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "primary key".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Lower case primary key type modifier".to_string()),
+                documentation: Some(Documentation::String(
+                    "primary key type modifier".to_string(),
+                )),
+                insert_text: Some(r#"primary key"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "STATIC".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Upper case STATIC type modifier".to_string()),
+                documentation: Some(Documentation::String("STATIC type modifier".to_string())),
+                insert_text: Some(r#"STATIC"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "static".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some("Lower case static type modifier".to_string()),
+                documentation: Some(Documentation::String("static type modifier".to_string())),
+                insert_text: Some(r#"static"#.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            },
+        ])));
     }
 
     async fn handle_fields_completion(
@@ -3187,6 +3412,139 @@ impl Backend {
 
         Ok(Some(CompletionResponse::Array(items)))
     }
+
+    async fn handle_drop_aggregate_completions(
+        &self,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let rq = query_aggregates(&self.config).await;
+
+        match rq {
+            Ok(r) => {
+                let mut items = Vec::<CompletionItem>::new();
+
+                for item in r {
+                    items.push(CompletionItem {
+                        label: format!("{}.{}", item.keyspace_name, item.aggregate_name),
+                        kind: Some(CompletionItemKind::VALUE),
+                        insert_text: Some(format!(
+                            "{}.{}",
+                            item.keyspace_name, item.aggregate_name
+                        )),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        ..Default::default()
+                    });
+                }
+
+                return Ok(Some(CompletionResponse::Array(items)));
+            }
+
+            Err(_) => return Ok(Some(CompletionResponse::Array(vec![]))),
+        }
+    }
+
+    async fn handle_drop_function_completions(
+        &self,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let rq = query_functions(&self.config).await;
+
+        match rq {
+            Ok(r) => {
+                let mut items = Vec::<CompletionItem>::new();
+
+                for item in r {
+                    items.push(CompletionItem {
+                        label: format!("{}.{}", item.keyspace_name, item.function_name),
+                        kind: Some(CompletionItemKind::VALUE),
+                        insert_text: Some(format!("{}.{}", item.keyspace_name, item.function_name)),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        ..Default::default()
+                    });
+                }
+
+                return Ok(Some(CompletionResponse::Array(items)));
+            }
+
+            Err(_) => return Ok(Some(CompletionResponse::Array(vec![]))),
+        }
+    }
+
+    async fn handle_drop_index_completions(
+        &self,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let rq = query_indexes(&self.config).await;
+
+        match rq {
+            Ok(r) => {
+                let mut items = Vec::<CompletionItem>::new();
+
+                for item in r {
+                    items.push(CompletionItem {
+                        label: format!("{}.{}", item.keyspace_name, item.index_name),
+                        kind: Some(CompletionItemKind::VALUE),
+                        insert_text: Some(format!("{}.{}", item.keyspace_name, item.index_name)),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        ..Default::default()
+                    });
+                }
+
+                return Ok(Some(CompletionResponse::Array(items)));
+            }
+
+            Err(_) => return Ok(Some(CompletionResponse::Array(vec![]))),
+        }
+    }
+
+    async fn handle_drop_type_completions(
+        &self,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let rq = query_types(&self.config).await;
+
+        match rq {
+            Ok(r) => {
+                let mut items = Vec::<CompletionItem>::new();
+
+                for item in r {
+                    items.push(CompletionItem {
+                        label: format!("{}.{}", item.keyspace_name, item.type_name),
+                        kind: Some(CompletionItemKind::VALUE),
+                        insert_text: Some(format!("{}.{}", item.keyspace_name, item.type_name)),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        ..Default::default()
+                    });
+                }
+
+                return Ok(Some(CompletionResponse::Array(items)));
+            }
+
+            Err(_) => return Ok(Some(CompletionResponse::Array(vec![]))),
+        }
+    }
+
+    async fn handle_drop_view_completions(
+        &self,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+        let rq = query_views(&self.config).await;
+
+        match rq {
+            Ok(r) => {
+                let mut items = Vec::<CompletionItem>::new();
+
+                for item in r {
+                    items.push(CompletionItem {
+                        label: format!("{}.{}", item.keyspace_name, item.view_name),
+                        kind: Some(CompletionItemKind::VALUE),
+                        insert_text: Some(format!("{}.{}", item.keyspace_name, item.view_name)),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        ..Default::default()
+                    });
+                }
+
+                return Ok(Some(CompletionResponse::Array(items)));
+            }
+
+            Err(_) => return Ok(Some(CompletionResponse::Array(vec![]))),
+        }
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -3309,10 +3667,28 @@ impl LanguageServer for Backend {
             None => return Ok(None),
         };
 
+        // --------------------------------[EXPERIMENTAL] --------------------------------
+
+        /*
+            Set of experimental features not included in standard build.
+            For more information, see https://github.com/Akzestia/cql-lsp
+        */
+
+        // let ssh_command_sequence = self.should_suggest_command_sequence(line, &position);
+
+        // --------------------------------[EXPERIMENTAL] --------------------------------
+
+        // --------------------------------[STABLE] --------------------------------
+
+        /*
+            Set of features included in standard build.
+            For more information, see https://github.com/Akzestia/cql-lsp
+        */
+
+        // General
         let in_string = Self::is_in_string_literal(line, position.character);
         let ssh_keyspaces = self.should_suggest_keyspaces(line, &position);
         let ssh_graph_types = self.should_suggest_graph_engine_types(line, &position);
-        // let ssh_command_sequence = self.should_suggest_command_sequence(line, &position);
         let ssh_keywords = self.should_suggest_keywords(line, &position).await;
         let ssh_fields = self.should_suggest_fields(line, &position);
         let ssh_from = self.should_suggest_from(line, &position);
@@ -3320,9 +3696,23 @@ impl LanguageServer for Backend {
         let ssh_if_not_exists = self.should_suggest_if_not_exists(line, &position);
         let ssh_create_keywords = self.should_suggest_create_keywords(line, &position);
         let ssh_alter_keywords = self.should_suggest_alter_keywords(line, &position);
+
+        // DROP kw
         let ssh_drop_keywords = self.should_suggest_drop_keywords(line, &position);
         let ssh_drop_keyspaces = self.should_suggest_drop_keyspaces(line, &position);
         let ssh_drop_tables = self.should_suggest_drop_tables(line, &position);
+        // DROP Queries
+        let ssh_drop_aggregate = self.should_suggest_drop_aggregate(line, &position);
+        let ssh_drop_function = self.should_suggest_drop_function(line, &position);
+        let ssh_drop_index = self.should_suggest_drop_indexes(line, &position);
+        let ssh_drop_type = self.should_suggest_drop_types(line, &position);
+        let ssh_drop_view = self.should_suggest_drop_views(line, &position);
+
+        // Types
+        let ssh_types = self.should_suggest_types_completions(line, &position).await;
+        let ssh_type_modifiers = self.shoul_suggest_type_modifiers(line, &position).await;
+
+        // --------------------------------[STABLE] --------------------------------
 
         if ssh_keyspaces {
             return if in_string {
@@ -3352,6 +3742,34 @@ impl LanguageServer for Backend {
 
         if ssh_drop_tables {
             return self.handle_table_completion(&position).await;
+        }
+
+        if ssh_drop_aggregate {
+            return self.handle_drop_aggregate_completions().await;
+        }
+
+        if ssh_drop_function {
+            return self.handle_drop_function_completions().await;
+        }
+
+        if ssh_drop_index {
+            return self.handle_drop_index_completions().await;
+        }
+
+        if ssh_drop_type {
+            return self.handle_drop_type_completions().await;
+        }
+
+        if ssh_drop_view {
+            return self.handle_drop_view_completions().await;
+        }
+
+        if ssh_types {
+            return self.handle_types_completion();
+        }
+
+        if ssh_type_modifiers {
+            return self.handle_type_modifiers_completion(line);
         }
 
         if ssh_from {

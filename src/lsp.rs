@@ -1,4 +1,4 @@
-use log::{debug, info, warn};
+use log::warn;
 
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
@@ -7,7 +7,10 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::consts::*;
-use crate::cqlsh::{self, Column, CqlSettings};
+use crate::cqlsh::{
+    self, Column, CqlSettings, query_aggregates, query_functions, query_indexes, query_types,
+    query_views,
+};
 
 /*
     Based on DataStax HCD && CQL versions 3.4+

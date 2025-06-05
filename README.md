@@ -41,6 +41,10 @@ export CQL_LSP_ENABLE_LOGGING="false"
 
 # Installation | Source Code
 
+> [!IMPORTANT]
+> Please note that the source code may contain unstable **features**. <br/>
+> It’s recommended to install from the **latest release** or via **cargo**. <br/>
+
 Clone repo
 ```sh
 git clone https://github.com/Akzestia/cql-lsp.git                                                    

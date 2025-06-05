@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/780f9005-d571-489d-93e3-e61f91dcb0fe
 | **IDE Integration**    | Zed, Neovim, any LSP-compatible    | JetBrains IDEs only              |
 | **Extensibility**      | Customizable Rust implementation   | Plugin system                    |
 
-# Installation | Cargo 
+# Installation | Cargo (Recommended)
 
 Install Language Server binary using cargo
 ```sh

@@ -4,7 +4,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/cql_lsp.svg)](https://crates.io/crates/cql_lsp)
 
-The 1nonly Open Source LSP for CQL (Cassandra Query Language) ^_^
+The 1nonly Open Source LSP implementation for CQL (Cassandra Query Language) ^_^
 
 https://github.com/user-attachments/assets/780f9005-d571-489d-93e3-e61f91dcb0fe
 
@@ -12,7 +12,7 @@ https://github.com/user-attachments/assets/780f9005-d571-489d-93e3-e61f91dcb0fe
 
 # Installation | Cargo 
 
-Install LSP binary using cargo
+Install Language Server binary using cargo
 ```sh
 cargo install cql_lsp
 ```

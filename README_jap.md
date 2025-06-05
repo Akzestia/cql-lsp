@@ -41,6 +41,10 @@ export CQL_LSP_ENABLE_LOGGING="false"
 
 # インストール｜ソース・コード
 
+> [!IMPORTANT]
+> ソースコードには不安定な機能が含まれている可能性がありますのでご注意ください。. <br/>
+> 最新リリースから、または**cargo**経由でインストールすることをお勧めします。. <br/>
+
 クローン・リポジトリ
 ```sh
 git clone https://github.com/Akzestia/cql-lsp.git                                                    

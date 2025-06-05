@@ -8,7 +8,17 @@ The 1nonly Open Source LSP implementation for CQL (Cassandra Query Language) ^_^
 
 https://github.com/user-attachments/assets/780f9005-d571-489d-93e3-e61f91dcb0fe
 
----------------------------------------------------------
+# cql-lsp vs DataGrip (CQL Support)
+
+| Feature                | cql-lsp (Open Source)              | DataGrip (JetBrains)            |
+|------------------------|------------------------------------|----------------------------------|
+| **License**            | MIT (Free)                         | Proprietary                      |
+| **Pricing**            | $0                                 | $129/year (Personal)             |
+| **CQL Completion**     | Full syntax + schema-aware         | Full syntax + schema-aware       |
+| **Live Schema Sync**   | ✅ Yes                             | ✅ Yes                           |
+| **Type Checking**      | ✅ Yes                             | ✅ Yes                           |
+| **IDE Integration**    | Zed, Neovim, any LSP-compatible    | JetBrains IDEs only              |
+| **Extensibility**      | Customizable Rust implementation   | Plugin system                    |
 
 # Installation | Cargo 
 

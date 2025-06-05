@@ -46,6 +46,13 @@ sudo -E ./install_src.sh
 > [!IMPORTANT]  
 > deploy.sh package.sh & install.sh are only used for development purposes
 
+# IDE Support
+
+### [Zed](https://zed.dev/)
+  - Integrated into [CQL](https://zed.dev/extensions?query=CQL) extension <br/>
+### [Nvim](https://neovim.io/)
+  - Requires manual configuration via [lsp-config](https://neovim.io/doc/user/lsp.html) <br/>
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

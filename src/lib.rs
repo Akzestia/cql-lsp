@@ -1,5 +1,9 @@
+pub mod completions;
 pub mod consts;
 pub mod cqlsh;
+pub mod data;
+pub mod handlers;
 pub mod lsp;
 pub mod setup;
 pub mod tree_sitter;
+pub mod utils;

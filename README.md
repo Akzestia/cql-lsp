@@ -63,7 +63,7 @@ sudo -E ./install_src.sh
 # IDE Support
 
 ### [Zed](https://zed.dev/)
-  - Integrated into [CQL](https://zed.dev/extensions?query=CQL) extension <br/>
+  - Integrated with [CQL](https://zed.dev/extensions?query=CQL) extension <br/>
 ### [Nvim](https://neovim.io/)
   - Requires manual configuration via [lsp-config](https://neovim.io/doc/user/lsp.html) <br/>
 

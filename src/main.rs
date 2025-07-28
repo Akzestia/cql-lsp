@@ -1,5 +1,5 @@
 use cql_lsp::cqlsh::CqlSettings;
-use cql_lsp::lsp::Backend;
+use cql_lsp::lsp::{Backend, FormattingSettings};
 use cql_lsp::setup::setup_logger;
 use log::info;
 use std::collections::HashMap;
@@ -73,9 +73,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("Db user wasn't provided.\nSetting user to default(cassandra)");
         "cassandra".to_string()
     });
+    let type_alignment_offset = std::env::var("CQL_LSP_TYPE_ALIGNMENT_OFFSET").unwrap_or_else(|_| {
+       info!("Type alignment offset wasn't provided.\n Setting type alignment offset to default 7");
+       "7".to_string()
+    });
 
     // Init CqlSettings settings
     let settings = CqlSettings::from_env(&url, &pswd, &user);
+    let formatting_settings = FormattingSettings::from_env(&type_alignment_offset);
 
     // Start LSP
     let stdin = stdin();
@@ -85,7 +90,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         documents: RwLock::new(HashMap::new()),
         current_document: RwLock::new(None),
         config: settings,
+        formatting_config: formatting_settings,
     });
+
     Server::new(stdin, stdout, socket).serve(service).await;
 
     Ok(())

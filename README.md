@@ -37,6 +37,7 @@ export CQL_LSP_DB_URL="172.17.0.2"
 export CQL_LSP_DB_PASSWD="cassandra"
 export CQL_LSP_DB_USER="cassandra"
 export CQL_LSP_ENABLE_LOGGING="false"
+export CQL_LSP_TYPE_ALIGNMENT_OFFSET="7"
 ```
 
 # Installation | Source Code

@@ -37,6 +37,7 @@ echo "Adding environment variables to $CONFIG_FILE"
  echo 'export CQL_LSP_DB_PASSWD="cassandra"'
  echo 'export CQL_LSP_DB_USER="cassandra"'
  echo 'export CQL_LSP_ENABLE_LOGGING="false"'
+ echo 'export CQL_LSP_TYPE_ALIGNMENT_OFFSET="7"'
 } >> "$CONFIG_FILE"
 
 echo "Installation complete for user $TARGET_USER."

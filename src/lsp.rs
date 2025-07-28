@@ -4,9 +4,6 @@ use tower_lsp::{Client, LanguageServer};
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 
-use crate::formatting::*;
-use crate::handlers::*;
-
 use crate::cqlsh::CqlSettings;
 
 /*

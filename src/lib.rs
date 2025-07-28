@@ -1,7 +1,7 @@
 pub mod completions;
 pub mod consts;
 pub mod cqlsh;
-pub mod data;
+pub mod formatting;
 pub mod handlers;
 pub mod lsp;
 pub mod setup;

@@ -2,7 +2,8 @@
 
 [🇺🇸 English](README.md) | [🇯🇵 日本語](README_jap.md)
 
-[![Crates.io](https://img.shields.io/crates/v/cql_lsp.svg)](https://crates.io/crates/cql_lsp)
+[![Crates.io](https://img.shields.io/crates/v/cql_lsp.svg)](https://crates.io/crates/cql_lsp) </br>
+[![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Dakzestia%26type%3Dpatrons&style=for-the-badge)](https://patreon.com/akzestia)
 
 CQL (Cassandra クエリ言語) 用の唯一のオープン ソース LSP ^_^
 

@@ -45,8 +45,8 @@ export CQL_LSP_TYPE_ALIGNMENT_OFFSET="7"
 
 Clone repo
 ```sh
-git clone https://github.com/Akzestia/cql-lsp.git                                                    
-cd cql-lsp
+git clone https://github.com/Akzestia/cqlls.git                                                    
+cd cqlls
 ```
 
 Run install script

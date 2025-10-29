@@ -74,7 +74,7 @@ impl Backend {
         }
     }
 
-    pub async fn align_types_inside_create_table(
+    pub async fn align_types_inside_create_statement(
         &self,
         lines: &mut Vec<String>,
         document_url: &Url,
@@ -85,7 +85,8 @@ impl Backend {
         let mut parenthesis_depth = 0;
 
         for (i, line) in lines.iter().enumerate() {
-            let is_table_start = line.trim().starts_with("CREATE TABLE");
+            let is_create_st_start = line.trim().to_lowercase().starts_with("create table")
+                || line.trim().to_lowercase().starts_with("create type");
             let contains_cql_type = self.line_contains_cql_type(line);
             let has_open_brace = line.contains('(');
             let has_close_brace = line.contains(')');
@@ -99,7 +100,7 @@ impl Backend {
             }
 
             // Start of a new table
-            if is_table_start {
+            if is_create_st_start {
                 // If we were already in a table, push the current block
                 if in_table && !current_block.is_empty() {
                     working_blocks.push(current_block.clone());
@@ -145,6 +146,10 @@ impl Backend {
 
                 for w in split {
                     if CQL_TYPES_LWC.contains(&w.to_lowercase().replace(",", "").trim().to_string())
+                        || w.starts_with("set")
+                        || w.starts_with("map")
+                        || w.starts_with("list")
+                        || w.starts_with("frozen")
                     {
                         line_type = w.to_string();
                         break;
@@ -235,11 +240,42 @@ impl Backend {
                 || (is_arg && !is_inside_multiline_comment && !is_ml_comment_clause)
                 || (is_selector && !is_inside_multiline_comment && !is_ml_comment_clause)
                 || (is_pk && !is_inside_multiline_comment && !is_ml_comment_clause))
-                && !line.1.to_lowercase().starts_with("create")
-                && !line.1.to_lowercase().starts_with("select")
-                && !line.1.to_lowercase().starts_with("as")
-                && !line.1.to_lowercase().starts_with("on")
-                && !line.1.to_lowercase().starts_with("where")
+                && ((!line.1.to_lowercase().starts_with("create table")
+                    || !line.1.to_lowercase().starts_with("create type"))
+                    && (self
+                        .is_inside_create_table_no_position(line.0, document_url)
+                        .await
+                        || self
+                            .is_inside_create_type_no_position(line.0, document_url)
+                            .await))
+                && (!line.1.to_lowercase().starts_with("select")
+                    && (self
+                        .is_inside_create_table_no_position(line.0, document_url)
+                        .await
+                        || self
+                            .is_inside_create_type_no_position(line.0, document_url)
+                            .await))
+                && (!line.1.to_lowercase().starts_with("as")
+                    && (self
+                        .is_inside_create_table_no_position(line.0, document_url)
+                        .await
+                        || self
+                            .is_inside_create_type_no_position(line.0, document_url)
+                            .await))
+                && (!line.1.to_lowercase().starts_with("on")
+                    && (self
+                        .is_inside_create_table_no_position(line.0, document_url)
+                        .await
+                        || self
+                            .is_inside_create_type_no_position(line.0, document_url)
+                            .await))
+                && (!line.1.to_lowercase().starts_with("where")
+                    && (self
+                        .is_inside_create_table_no_position(line.0, document_url)
+                        .await
+                        || self
+                            .is_inside_create_type_no_position(line.0, document_url)
+                            .await))
             {
                 indices.push(line.0);
             }
@@ -446,6 +482,7 @@ impl Backend {
                 && !line.contains(";")
                 && !line.contains("begin")
                 && !line.contains("//")
+                && !line.contains("--")
                 && !line.contains("/*")
                 && !line.contains("*/")
                 && !line.ends_with("as")
@@ -466,8 +503,11 @@ impl Backend {
                 && !line.contains(";")
                 && !line.contains("begin")
                 && !line.contains("//")
+                && !line.contains("--")
                 && !line.contains("/*")
                 && !line.contains("*/")
+                && !line.ends_with("as")
+                && !line.ends_with("with")
                 && !self.is_line_in_multiline_comment(&line, index, lines)
             {
                 lines[index].push(';');
@@ -670,7 +710,7 @@ impl Backend {
         self.add_tabs_to_args(&mut working_vec, document_url).await;
         self.add_new_line_before_pk(&mut working_vec);
         self.add_tabs_to_cql_types(&mut working_vec);
-        self.align_types_inside_create_table(&mut working_vec, document_url)
+        self.align_types_inside_create_statement(&mut working_vec, document_url)
             .await;
 
         let idx = working_vec.len() - 1;

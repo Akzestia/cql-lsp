@@ -38,7 +38,13 @@ impl Backend {
 
         for w in split {
             info!("{} ^^", w.to_lowercase().to_string());
-            if CQL_TYPES_LWC.contains(&w.to_lowercase().replace(",", "").trim().to_string()) {
+            // Fix List<>, frozen<>, map<>, set<>
+            if CQL_TYPES_LWC.contains(&w.to_lowercase().replace(",", "").trim().to_string())
+                || w.starts_with("set")
+                || w.starts_with("map")
+                || w.starts_with("list")
+                || w.starts_with("frozen")
+            {
                 is_type = true;
                 break;
             }

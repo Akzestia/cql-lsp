@@ -1262,6 +1262,68 @@ impl Backend {
         false
     }
 
+    pub async fn is_inside_create_type_no_position(
+        &self,
+        line_index: usize,
+        document_url: &Url,
+    ) -> bool {
+        let documents = self.documents.read().await;
+
+        if let Some(document) = documents.get(document_url) {
+            let lw_doc_text = document;
+            let lines: Vec<&str> = lw_doc_text.split('\n').collect();
+
+            let current_line = line_index;
+            if current_line >= lines.len() {
+                return false;
+            }
+
+            let mut found_create_table = false;
+            let mut search_index = current_line;
+
+            loop {
+                let line_content = lines[search_index].to_lowercase();
+
+                if (line_content.contains("create type")
+                    || line_content.contains("create type if not exists"))
+                    && line_content.contains("(")
+                    && !line_content.contains(")")
+                {
+                    info!("Found CRT: {}", line_content);
+                    found_create_table = true;
+                    break;
+                }
+
+                if self.line_contains_cql_kw(&line_content) {
+                    return false;
+                }
+
+                if search_index == 0 {
+                    break;
+                }
+                search_index -= 1;
+            }
+
+            if !found_create_table {
+                return false;
+            }
+
+            for i in (current_line + 1)..lines.len() {
+                let line_content = lines[i];
+
+                if self.line_contains_cql_kw(line_content) {
+                    return false;
+                }
+
+                if line_content.contains(")") {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
     pub async fn is_inside_create_table(
         &self,
         line: &str,

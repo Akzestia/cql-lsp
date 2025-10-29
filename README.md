@@ -1,24 +1,21 @@
-# cql-lsp
+# cqlls
 
 [🇺🇸 English](README.md) | [🇯🇵 日本語](README_jap.md)
 
-[![Crates.io](https://img.shields.io/crates/v/cql_lsp.svg)](https://crates.io/crates/cql_lsp)
+[![Crates.io](https://img.shields.io/crates/v/cql_lsp.svg)](https://crates.io/crates/cql_lsp)</br> 
+[![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Dakzestia%26type%3Dpatrons&style=for-the-badge)](https://patreon.com/akzestia)
 
-The 1nonly Open Source LSP implementation for CQL (Cassandra Query Language) ^_^
+The 1nonly Open Source **language server** for CQL (Cassandra Query Language) ^_^
 
 https://github.com/user-attachments/assets/780f9005-d571-489d-93e3-e61f91dcb0fe
 
-# cql-lsp vs DataGrip (CQL Support)
+# cqlls vs Corpo 
 
-| Feature                | cql-lsp (Open Source)              | DataGrip (JetBrains)            |
-|------------------------|------------------------------------|----------------------------------|
-| **License**            | MIT (Free)                         | Proprietary                      |
-| **Pricing**            | $0                                 | $129/year (Personal)             |
-| **CQL Completion**     | Full syntax + schema-aware         | Full syntax + schema-aware       |
-| **Live Schema Sync**   | ✅ Yes                             | ✅ Yes                           |
-| **Type Checking**      | ✅ Yes                             | ✅ Yes                           |
-| **IDE Integration**    | Zed, Neovim, any LSP-compatible    | JetBrains IDEs only              |
-| **Extensibility**      | Customizable Rust implementation   | Plugin system                    |
+- Free
+- Open Source language server (under MIT License)
+- Aiming to provide the best experience
+- Seamless Integration with Zed && Nvim
+- Written in Rust :D
 
 # Installation | Cargo (Recommended)
 
@@ -48,8 +45,8 @@ export CQL_LSP_TYPE_ALIGNMENT_OFFSET="7"
 
 Clone repo
 ```sh
-git clone https://github.com/Akzestia/cql-lsp.git                                                    
-cd cql-lsp
+git clone https://github.com/Akzestia/cqlls.git                                                    
+cd cqlls
 ```
 
 Run install script

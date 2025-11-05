@@ -37,7 +37,6 @@ impl Backend {
         let mut is_type = false;
 
         for w in split {
-            info!("{} ^^", w.to_lowercase().to_string());
             // Fix List<>, frozen<>, map<>, set<>
             if CQL_TYPES_LWC.contains(&w.to_lowercase().replace(",", "").trim().to_string())
                 || w.starts_with("set")
@@ -45,6 +44,7 @@ impl Backend {
                 || w.starts_with("list")
                 || w.starts_with("frozen")
             {
+                info!("{} ^^", w.to_lowercase().to_string());
                 is_type = true;
                 break;
             }

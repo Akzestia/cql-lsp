@@ -101,7 +101,6 @@ impl Backend {
 
             // Start of a new table
             if is_create_st_start {
-                // If we were already in a table, push the current block
                 if in_table && !current_block.is_empty() {
                     working_blocks.push(current_block.clone());
                     current_block.clear();
@@ -125,12 +124,9 @@ impl Backend {
             }
         }
 
-        // Handle any remaining block at the end
         if !current_block.is_empty() {
             working_blocks.push(current_block);
         }
-
-        info!("Size of working blocks: {}", working_blocks.len());
 
         info!("Size of working blocks: {}", working_blocks.len());
 
@@ -172,7 +168,7 @@ impl Backend {
              * 1 -> offset
              */
             for offset in offsets {
-                if offset.1 < max_offset_x {
+                if offset.1 < max_offset_x && !lines[offset.0].trim().starts_with("--") {
                     let mut working_line = String::from(&lines[offset.0]);
                     let diff = max_offset_x - offset.1;
                     info!("\n\nediting line: {}, {}\n\n", working_line, offset.1);
@@ -183,16 +179,28 @@ impl Backend {
         }
     }
 
-    pub fn add_tabs_to_cql_types(&self, lines: &mut Vec<String>) {
-        for line in lines {
+    pub async fn add_tabs_to_cql_types(&self, lines: &mut Vec<String>, document_url: &Url) {
+        let mut index = 0;
+        for line in lines.iter_mut() {
             if line.trim().is_empty() {
+                index += 1;
                 continue;
             }
 
             let mut found_type = None;
             for word in line.split_whitespace() {
-                let clean_word = word.to_lowercase().replace(",", "").trim().to_string();
-                if CQL_TYPES_LWC.contains(&clean_word) {
+                if (CQL_TYPES_LWC
+                    .contains(&word.to_lowercase().replace(",", "").trim().to_string())
+                    || word.starts_with("set")
+                    || word.starts_with("map")
+                    || word.starts_with("list")
+                    || word.starts_with("frozen"))
+                    && !(line.trim().starts_with("--")
+                        || line.trim().starts_with("//")
+                        || self
+                            .is_inside_multiline_comment_no_position(index, &document_url)
+                            .await)
+                {
                     found_type = Some(word);
                     break;
                 }
@@ -212,77 +220,68 @@ impl Backend {
                     }
                 }
             }
+
+            index += 1;
         }
     }
 
     pub async fn add_tabs_to_args(&self, lines: &mut Vec<String>, document_url: &Url) {
-        let mut indices = Vec::<usize>::new();
+        let mut indices: Vec<usize> = Vec::new();
 
-        for line in lines.iter().enumerate() {
+        for (idx, line) in lines.iter().enumerate() {
+            let trimmed = line.trim_start();
+            let trimmed_lower = trimmed.to_lowercase();
+
             let is_inside_multiline_comment =
-                self.is_line_in_multiline_comment(line.1, line.0, lines);
-            let is_arg = self.is_line_inside_init_args(line.1, line.0, lines);
-            let is_selector = self.is_line_inside_selectors(line.1, line.0, lines);
-            let is_ml_comment_clause = self.is_multi_line_comment_clause(line.1);
-            let trimed = line.1.trim_start();
-            let mut is_pk = trimed.to_lowercase().starts_with("primary");
-            let is_pk_create_table = self
-                .is_inside_create_table_no_position(line.0, document_url)
+                self.is_line_in_multiline_comment(trimmed, idx, lines);
+            let is_arg = self.is_line_inside_init_args(trimmed, idx, lines);
+            let is_selector = self.is_line_inside_selectors(trimmed, idx, lines);
+            let is_ml_comment_clause = self.is_multi_line_comment_clause(trimmed);
+            let is_pk_line = trimmed_lower.starts_with("primary");
+
+            let is_in_create_table = self
+                .is_inside_create_table_no_position(idx, document_url)
                 .await;
+            let is_in_create_type = self
+                .is_inside_create_type_no_position(idx, document_url)
+                .await;
+            let is_inside_curly_bracers =
+                self.is_inside_curly_braces_block(idx, document_url).await;
 
-            info!("Line: {}\nIs inside: {}", line.1, is_pk_create_table);
+            let banned_starts = [
+                "create table",
+                "create type",
+                "select",
+                "as",
+                "on",
+                "where",
+                "with",
+            ];
 
-            if !is_pk_create_table && is_pk {
-                is_pk = false;
+            let starts_with_banned = banned_starts.iter().any(|p| trimmed_lower.starts_with(p));
+
+            if is_inside_multiline_comment && !is_ml_comment_clause && !starts_with_banned {
+                indices.push(idx);
+                continue;
             }
 
-            if (is_inside_multiline_comment
-                || (is_arg && !is_inside_multiline_comment && !is_ml_comment_clause)
-                || (is_selector && !is_inside_multiline_comment && !is_ml_comment_clause)
-                || (is_pk && !is_inside_multiline_comment && !is_ml_comment_clause))
-                && ((!line.1.to_lowercase().starts_with("create table")
-                    || !line.1.to_lowercase().starts_with("create type"))
-                    && (self
-                        .is_inside_create_table_no_position(line.0, document_url)
-                        .await
-                        || self
-                            .is_inside_create_type_no_position(line.0, document_url)
-                            .await))
-                && (!line.1.to_lowercase().starts_with("select")
-                    && (self
-                        .is_inside_create_table_no_position(line.0, document_url)
-                        .await
-                        || self
-                            .is_inside_create_type_no_position(line.0, document_url)
-                            .await))
-                && (!line.1.to_lowercase().starts_with("as")
-                    && (self
-                        .is_inside_create_table_no_position(line.0, document_url)
-                        .await
-                        || self
-                            .is_inside_create_type_no_position(line.0, document_url)
-                            .await))
-                && (!line.1.to_lowercase().starts_with("on")
-                    && (self
-                        .is_inside_create_table_no_position(line.0, document_url)
-                        .await
-                        || self
-                            .is_inside_create_type_no_position(line.0, document_url)
-                            .await))
-                && (!line.1.to_lowercase().starts_with("where")
-                    && (self
-                        .is_inside_create_table_no_position(line.0, document_url)
-                        .await
-                        || self
-                            .is_inside_create_type_no_position(line.0, document_url)
-                            .await))
-            {
-                indices.push(line.0);
+            if is_inside_curly_bracers && !starts_with_banned {
+                indices.push(idx);
+                continue;
+            }
+
+            let is_arg_context = (is_arg || is_selector || (is_pk_line && is_in_create_table))
+                && !is_inside_multiline_comment
+                && !is_ml_comment_clause;
+
+            if is_arg_context && (is_in_create_table || is_in_create_type) && !starts_with_banned {
+                indices.push(idx);
             }
         }
 
-        for x in indices {
-            lines[x].insert_str(0, "    ");
+        // apply indentation
+        for i in indices {
+            lines[i].insert_str(0, "    ");
         }
     }
 
@@ -709,7 +708,8 @@ impl Backend {
         // self.format_selectors(&mut working_vec);
         self.add_tabs_to_args(&mut working_vec, document_url).await;
         self.add_new_line_before_pk(&mut working_vec);
-        self.add_tabs_to_cql_types(&mut working_vec);
+        self.add_tabs_to_cql_types(&mut working_vec, document_url)
+            .await;
         self.align_types_inside_create_statement(&mut working_vec, document_url)
             .await;
 

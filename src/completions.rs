@@ -1262,6 +1262,120 @@ impl Backend {
         false
     }
 
+    pub async fn is_inside_multiline_comment_no_position(
+        &self,
+        line_index: usize,
+        document_url: &Url,
+    ) -> bool {
+        let documents = self.documents.read().await;
+
+        if let Some(document) = documents.get(document_url) {
+            let lw_doc_text = document;
+            let lines: Vec<&str> = lw_doc_text.split('\n').collect();
+
+            if line_index >= lines.len() {
+                return false;
+            }
+
+            let mut search_index = line_index as isize;
+
+            // Search backwards for start of comment (/*)
+            let mut found_comment_start = false;
+            while search_index >= 0 {
+                let line_content = lines[search_index as usize];
+
+                // If we find a comment end before the start, we’re outside
+                if line_content.contains("*/") {
+                    return false;
+                }
+
+                if line_content.contains("/*") {
+                    found_comment_start = true;
+                    break;
+                }
+
+                search_index -= 1;
+            }
+
+            if !found_comment_start {
+                return false;
+            }
+
+            // Search forward for end of comment (*/)
+            for i in line_index..lines.len() {
+                let line_content = lines[i];
+                if line_content.contains("*/") {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    pub async fn is_inside_curly_braces_block(
+        &self,
+        line_index: usize,
+        document_url: &Url,
+    ) -> bool {
+        let documents = self.documents.read().await;
+
+        if let Some(document) = documents.get(document_url) {
+            let lw_doc_text = document;
+            let lines: Vec<&str> = lw_doc_text.split('\n').collect();
+
+            if line_index >= lines.len() {
+                return false;
+            }
+
+            let mut search_index = line_index as isize;
+            let mut found_open_brace = false;
+
+            // Search backwards to find where the block started
+            while search_index >= 0 {
+                let line_content = lines[search_index as usize].to_lowercase();
+
+                // If we find a closing brace before an opening one, we're not inside a block
+                if line_content.contains('}') {
+                    return false;
+                }
+
+                // Detect the start of a curly brace block
+                if line_content.contains('{') {
+                    found_open_brace = true;
+                    break;
+                }
+
+                // If another CQL keyword is found, break (not inside block)
+                if self.line_contains_cql_kw(&line_content) {
+                    return false;
+                }
+
+                search_index -= 1;
+            }
+
+            if !found_open_brace {
+                return false;
+            }
+
+            // Search forward to see if the block closes after this line
+            for i in line_index..lines.len() {
+                let line_content = lines[i];
+
+                // If another statement starts, we’re outside the block
+                if self.line_contains_cql_kw(line_content) {
+                    return false;
+                }
+
+                if line_content.contains('}') {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
     pub async fn is_inside_create_type_no_position(
         &self,
         line_index: usize,
